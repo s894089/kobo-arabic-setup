@@ -1,0 +1,30 @@
+# Device backups — created at runtime, never publish
+backups/
+
+# The book collection ships EMPTY. Books are gigabytes and single files can
+# exceed GitHub's 100 MB per-file limit, so they travel separately.
+# Track the folder and its docs, ignore everything you drop into it.
+library/*
+!library/.gitkeep
+!library/README.md
+
+# Personal library reorganisation — specific to one person's books
+tools/library-plan.json
+tools/*.log
+
+# Personal data, in case it is ever copied into the payload by mistake
+payload/.adds/koreader/settings/*.sqlite3
+payload/.adds/koreader/settings/*.sqlite3-shm
+payload/.adds/koreader/settings/*.sqlite3-wal
+payload/.adds/koreader/settings/lookup_history.lua
+payload/.adds/koreader/settings/wikipedia_history.lua
+payload/.adds/koreader/settings/battery_stats.lua*
+payload/.adds/koreader/settings/koinsight.lua*
+payload/.adds/koreader/history.lua
+payload/.adds/koreader/clipboard/
+payload/.adds/koreader/cache/
+payload/.adds/koreader/screenshots/
+payload/.adds/koreader/crash.log
+
+.DS_Store
+._*
