@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kobo Arabic Reading Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EBEAE5; --surface:#FBFAF7; --surface-2:#F2F1EC; --sunken:#E3E2DC;
+  --ink:#1B1A17; --muted:#63605A; --faint:#8D8A83;
+  --line:#D5D3CB; --line-soft:#E3E1DA;
+  --plum:#7A3A63; --plum-soft:#F1E4EC;
+  --cyan:#26626E; --cyan-soft:#DDEBEC;
+  --amber:#835F14; --amber-soft:#F2EAD6;
+  --shadow:0 1px 2px rgba(27,26,23,.05), 0 8px 22px rgba(27,26,23,.05);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#151418; --surface:#1D1C21; --surface-2:#24232A; --sunken:#111015;
+  --ink:#E9E7E2; --muted:#A09D97; --faint:#7A776F;
+  --line:#302E37; --line-soft:#282730;
+  --plum:#CE93BA; --plum-soft:#2B1B27;
+  --cyan:#78BCC8; --cyan-soft:#132628;
+  --amber:#D6AE55; --amber-soft:#2A2213;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  --ground:#151418; --surface:#1D1C21; --surface-2:#24232A; --sunken:#111015;
+  --ink:#E9E7E2; --muted:#A09D97; --faint:#7A776F;
+  --line:#302E37; --line-soft:#282730;
+  --plum:#CE93BA; --plum-soft:#2B1B27;
+  --cyan:#78BCC8; --cyan-soft:#132628;
+  --amber:#D6AE55; --amber-soft:#2A2213;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+  font-size:15px; line-height:1.72; -webkit-font-smoothing:antialiased;
+}
+.ar{direction:rtl; text-align:right}
+.en{direction:ltr; text-align:left}
+body.lang-ar .en{display:none!important}
+body.lang-en .ar{display:none!important}
+body.lang-both .ar + .en, body.lang-both .en + .ar{margin-top:.35em}
+body.lang-both td .ar, body.lang-both td .en, body.lang-both li .ar, body.lang-both li .en{display:block}
+body.lang-both .en{color:var(--muted)}
+body.lang-ar{direction:rtl}
+body.lang-en, body.lang-both{direction:ltr}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.88em;
+  direction:ltr; unicode-bidi:embed; display:inline-block; font-variant-numeric:tabular-nums}
+code{background:var(--surface-2); border:1px solid var(--line-soft);
+  padding:.5px 5px; border-radius:4px; color:var(--ink)}
+
+/* ---- shell ---- */
+.top{position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+.topin{max-width:1180px; margin:0 auto; padding:12px 22px; display:flex; gap:16px;
+  align-items:center; flex-wrap:wrap; direction:ltr}
+.brand{font-family:"Readex Pro",sans-serif; font-weight:600; font-size:15px; letter-spacing:-.01em;
+  display:flex; align-items:center; gap:9px; margin-inline-end:auto}
+.dot{width:9px; height:9px; border-radius:50%;
+  background:linear-gradient(135deg,var(--plum) 0 33%,var(--cyan) 33% 66%,var(--amber) 66%)}
+.langsw{display:flex; gap:2px; background:var(--sunken); border:1px solid var(--line);
+  border-radius:8px; padding:2px}
+.langsw button{border:0; background:transparent; color:var(--muted); cursor:pointer;
+  font-family:inherit; font-size:12.5px; padding:5px 12px; border-radius:6px; white-space:nowrap}
+.langsw button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+.langsw button:focus-visible{outline:2px solid var(--cyan); outline-offset:1px}
+
+nav.tabs{max-width:1180px; margin:0 auto; padding:0 22px; display:flex; gap:4px;
+  overflow-x:auto; direction:ltr; scrollbar-width:thin}
+nav.tabs button{
+  border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted);
+  font-family:"Readex Pro",sans-serif; font-size:13.5px; font-weight:400; cursor:pointer;
+  padding:12px 13px 10px; white-space:nowrap; transition:color .12s, border-color .12s;
+}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--plum); font-weight:500}
+nav.tabs button:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px}
+
+main{max-width:1180px; margin:0 auto; padding:0 22px 110px}
+.page{display:none; padding-top:34px}
+.page.on{display:block}
+
+/* ---- subtabs ---- */
+.subtabs{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 26px; direction:ltr}
+.subtabs button{
+  border:1px solid var(--line); background:var(--surface); color:var(--muted);
+  border-radius:999px; padding:6px 15px; font-family:inherit; font-size:13px; cursor:pointer;
+}
+.subtabs button[aria-selected="true"]{background:var(--ink); border-color:var(--ink); color:var(--ground)}
+.subtabs button:focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+.sub{display:none}
+.sub.on{display:block}
+
+/* ---- type ---- */
+h1{font-family:"Readex Pro",sans-serif; font-weight:500; font-size:clamp(1.9rem,4.4vw,2.7rem);
+  line-height:1.2; margin:0 0 10px; letter-spacing:-.02em; text-wrap:balance}
+h2{font-family:"Readex Pro",sans-serif; font-weight:500; font-size:1.32rem; margin:38px 0 4px;
+  letter-spacing:-.01em; text-wrap:balance}
+h2:first-of-type{margin-top:0}
+h3{font-family:"Readex Pro",sans-serif; font-weight:500; font-size:1.02rem; margin:26px 0 4px}
+p{margin:.55em 0; max-width:74ch}
+.lede{color:var(--muted); font-size:1.02rem; max-width:70ch; margin-bottom:26px}
+ul,ol{margin:.5em 0; padding-inline-start:1.3em; max-width:74ch}
+li{margin:.3em 0}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--plum); margin:0 0 10px; direction:ltr}
+
+/* ---- blocks ---- */
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:18px 0}
+.box{background:var(--surface); border:1px solid var(--line); border-radius:11px;
+  padding:16px 18px; box-shadow:var(--shadow)}
+.box h4{font-family:"Readex Pro",sans-serif; font-size:.94rem; font-weight:500; margin:0 0 6px}
+.box .v{font-family:"IBM Plex Mono",monospace; font-size:1.1rem; direction:ltr; word-break:break-all}
+.box p{font-size:13.5px; color:var(--muted); margin:.35em 0}
+.kv{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--faint); direction:ltr}
+
+.note{border-radius:10px; padding:14px 17px; margin:18px 0; border:1px solid; font-size:14.2px}
+.note h4{margin:0 0 5px; font-family:"Readex Pro",sans-serif; font-size:.95rem; font-weight:500}
+.note p{margin:.3em 0; max-width:none}
+.note.warn{background:var(--plum-soft); border-color:color-mix(in srgb,var(--plum) 35%,transparent)}
+.note.warn h4{color:var(--plum)}
+.note.tip{background:var(--cyan-soft); border-color:color-mix(in srgb,var(--cyan) 32%,transparent)}
+.note.tip h4{color:var(--cyan)}
+.note.care{background:var(--amber-soft); border-color:color-mix(in srgb,var(--amber) 34%,transparent)}
+.note.care h4{color:var(--amber)}
+
+pre{background:var(--sunken); border:1px solid var(--line); border-radius:9px;
+  padding:13px 15px; overflow-x:auto; direction:ltr; text-align:left; margin:12px 0}
+pre code{background:none; border:0; padding:0; font-size:12.6px; line-height:1.65; display:block}
+
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:10px;
+  background:var(--surface); margin:16px 0}
+table{width:100%; border-collapse:collapse; font-size:13.4px}
+th{background:var(--surface-2); color:var(--muted); font-weight:600; font-size:11.5px;
+  letter-spacing:.05em; text-transform:uppercase; padding:9px 13px; white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+body.lang-ar th{text-align:right} body.lang-en th, body.lang-both th{text-align:left}
+td{padding:9px 13px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--surface-2)}
+
+.pill{display:inline-block; font-size:10.5px; font-weight:600; padding:2px 8px;
+  border-radius:999px; white-space:nowrap; letter-spacing:.02em; direction:ltr}
+.pill.core{background:var(--surface-2); color:var(--faint); border:1px solid var(--line)}
+.pill.third{background:var(--cyan-soft); color:var(--cyan)}
+.pill.off{background:var(--sunken); color:var(--faint); text-decoration:line-through}
+.pill.broke{background:var(--plum-soft); color:var(--plum)}
+.pill.yes{background:var(--cyan-soft); color:var(--cyan)}
+.pill.no{background:var(--plum-soft); color:var(--plum)}
+.pill.edit{background:var(--amber-soft); color:var(--amber)}
+
+/* file tree */
+.tree{background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:16px 18px; overflow-x:auto; direction:ltr; text-align:left; margin:16px 0}
+.tree ul{list-style:none; margin:0; padding-inline-start:19px; max-width:none}
+.tree > ul{padding-inline-start:0}
+.tree li{margin:1px 0; font-family:"IBM Plex Mono",monospace; font-size:12.6px;
+  line-height:1.85; white-space:nowrap}
+.tree .n{color:var(--ink)}
+.tree .d{color:var(--cyan)}
+.tree .c{color:var(--faint); font-family:"IBM Plex Sans Arabic",sans-serif; font-size:12px;
+  margin-inline-start:12px; white-space:normal}
+.tree .danger .n{color:var(--plum)}
+
+.steps{counter-reset:s; list-style:none; padding:0; max-width:76ch}
+.steps > li{counter-increment:s; position:relative; padding-inline-start:40px;
+  margin:0 0 16px; min-height:28px}
+.steps > li::before{content:counter(s); position:absolute; inset-inline-start:0; top:1px;
+  width:26px; height:26px; border-radius:50%; background:var(--ink); color:var(--ground);
+  font-family:"IBM Plex Mono",monospace; font-size:12px; display:flex;
+  align-items:center; justify-content:center}
+.steps h4{margin:0 0 2px; font-family:"Readex Pro",sans-serif; font-size:.97rem; font-weight:500}
+
+.foot{margin-top:60px; padding-top:22px; border-top:1px solid var(--line);
+  color:var(--faint); font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; scroll-behavior:auto!important}}
+@media (max-width:640px){ .topin{padding:10px 16px} nav.tabs{padding:0 16px} main{padding:0 16px 80px} }
+</style>
+</head>
+<body class="lang-both">
+<div class="top">
+  <div class="topin">
+    <div class="brand"><span class="dot"></span> Kobo Arabic Reading Setup</div>
+    <div class="langsw" role="group" aria-label="Language">
+      <button data-lang="ar" aria-pressed="false">عربي</button>
+      <button data-lang="en" aria-pressed="false">English</button>
+      <button data-lang="both" aria-pressed="true">كلاهما · Both</button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="what"    aria-selected="true">ما هذا · What this is</button>
+    <button role="tab" data-tab="before"  aria-selected="false">قبل أن تبدأ · Before you start</button>
+    <button role="tab" data-tab="repo"    aria-selected="false">المستودع · The repo</button>
+    <button role="tab" data-tab="install" aria-selected="false">التثبيت · Install</button>
+    <button role="tab" data-tab="changes" aria-selected="false">ما يتغيّر · What changes</button>
+    <button role="tab" data-tab="using"   aria-selected="false">الاستخدام · Using KOReader</button>
+    <button role="tab" data-tab="organise" aria-selected="false">التنظيم · Organising</button>
+    <button role="tab" data-tab="care"    aria-selected="false">الصيانة · Maintenance</button>
+  </nav>
+</div>
+
+<main>
+
+<!-- ============ WHAT ============ -->
+<section class="page on" id="p-what" role="tabpanel">
+  <p class="eyebrow">01 — Orientation</p>
+  <h1 class="ar">ثلاث طبقات على جهاز واحد</h1>
+  <h1 class="en">Three layers on one device</h1>
+  <p class="lede ar">قبل أي شيء: افهم ما الذي يعمل على جهازك ولماذا. أكثر الارتباك عند المبتدئين سببه الخلط بين هذه الطبقات الثلاث. اقرأ هذه الصفحة ولو لم تقرأ غيرها.</p>
+  <p class="lede en">Before anything else: understand what actually runs on your device and why. Most beginner confusion comes from mixing these three layers up. Read this page even if you read nothing else.</p>
+
+  <div class="grid">
+    <div class="box">
+      <h4 class="ar">١ — كوبو ونظامه «نِكِل»</h4><h4 class="en">1 — The Kobo and &quot;Nickel&quot;</h4>
+      <p class="ar">الجهاز نفسه، وبرنامجه الأصلي من المصنع اسمه <strong>Nickel</strong>. هو ما تراه حين تشغّل الجهاز: المكتبة، المتجر، شاشة القراءة. سهل ومصقول لكنه محدود — وضعيف جدًا مع ملفات PDF ومع العربية.</p>
+      <p class="en">The device itself, and its factory software, which is called <strong>Nickel</strong>. It's what you see when you switch the device on: the library, the store, the reading screen. Polished and easy, but limited — and very weak with PDFs and with Arabic.</p>
+    </div>
+    <div class="box">
+      <h4 class="ar">٢ — NickelMenu</h4><h4 class="en">2 — NickelMenu</h4>
+      <p class="ar">أداة صغيرة تزرع قائمة أوامر <em>داخل</em> واجهة كوبو الأصلية. لا تغيّر شيئًا في المظهر، لكنها تعطيك زرًّا لتشغيل برامج أخرى — وأهمها KOReader. بدونها لا سبيل لتشغيله.</p>
+      <p class="en">A small tool that plants a menu of commands <em>inside</em> Kobo's own interface. It changes nothing about how the device looks, but it gives you a button to launch other software — above all KOReader. Without it there is no way in.</p>
+    </div>
+    <div class="box">
+      <h4 class="ar">٣ — KOReader</h4><h4 class="en">3 — KOReader</h4>
+      <p class="ar">قارئ حرّ مفتوح المصدر، وهو سبب هذا الدليل كلّه. لا يستبدل نظام كوبو بل يجلس بجانبه: تضغط زرًّا فيتوقّف كوبو مؤقتًا ويعمل KOReader، وحين تخرج يعود كوبو كما كان.</p>
+      <p class="en">A free, open-source reader, and the reason this whole guide exists. It doesn't replace Kobo's system — it sits beside it. You press a button, Kobo pauses, KOReader takes over; when you exit, Kobo returns exactly as it was.</p>
+    </div>
+  </div>
+
+  <div class="note tip">
+    <h4 class="ar">الصورة كاملة في جملة</h4><h4 class="en">The whole picture in one sentence</h4>
+    <p class="ar">كوبو هو النظام الأصلي، و<strong>NickelMenu هو الباب</strong>، و<strong>KOReader هو الغرفة التي تريد الجلوس فيها</strong>. هذه الحزمة تؤثّث الغرفة — ولا تبني الباب. لهذا يجب أن يكون NickelMenu مثبّتًا قبلها.</p>
+    <p class="en">Kobo is the house you were given, <strong>NickelMenu is the door</strong>, and <strong>KOReader is the room you actually want to sit in</strong>. This setup furnishes the room — it does not build the door. That is why NickelMenu must already be installed.</p>
+  </div>
+
+  <h2 class="ar">لماذا KOReader تحديدًا للعربية</h2>
+  <h2 class="en">Why KOReader specifically, for Arabic</h2>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>قارئ كوبو · Kobo's reader</th><th>KOReader</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ar">ملفات PDF</span><span class="en">PDF files</span></td>
+        <td><span class="ar">يعرض الصفحة كاملة بهوامشها. على شاشة ٧ بوصة يصبح النص أصغر من أن يُقرأ.</span><span class="en">Shows the whole page including its margins. On a 7&quot; screen the text becomes too small to read.</span></td>
+        <td><span class="ar">يقصّ الهوامش، ويعيد تدفّق النص، ويكبّر عمودًا واحدًا. الفارق هائل.</span><span class="en">Crops margins, reflows text, zooms a single column. The difference is enormous.</span></td></tr>
+      <tr><td><span class="ar">ضبط الأسطر العربية</span><span class="en">Arabic justification</span></td>
+        <td><span class="ar">يعامل النص بقواعد إنجليزية. المسافات بين الكلمات تتمدّد بشكل قبيح.</span><span class="en">Treats the text by English rules. Word spacing stretches unpleasantly.</span></td>
+        <td><span class="ar">لغة النص قابلة للضبط على العربية، فتُطبَّق قواعدها الصحيحة.</span><span class="en">Text language can be set to Arabic, so its correct rules apply.</span></td></tr>
+      <tr><td><span class="ar">الخطوط</span><span class="en">Typefaces</span></td>
+        <td><span class="ar">قائمة قصيرة، وخطوط النسخ فيها ضعيفة.</span><span class="en">A short list, with poor naskh options.</span></td>
+        <td><span class="ar">أي خط تضعه في مجلده، مع تحكّم في الوزن والتباعد والتشكيل.</span><span class="en">Any font you drop in its folder, with control over weight, spacing and diacritics.</span></td></tr>
+      <tr><td><span class="ar">القواميس</span><span class="en">Dictionaries</span></td>
+        <td><span class="ar">صيغة خاصة بكوبو، ولا يوجد قاموس عربي رسمي لها.</span><span class="en">A Kobo-only format, with no official Arabic dictionary for it.</span></td>
+        <td><span class="ar">صيغة StarDict المفتوحة — تركّب أي قاموس عربي بالنسخ.</span><span class="en">The open StarDict format — install any Arabic dictionary by copying it in.</span></td></tr>
+      <tr><td><span class="ar">التظليل والملاحظات</span><span class="en">Highlights and notes</span></td>
+        <td><span class="ar">محبوسة في حساب كوبو.</span><span class="en">Locked inside your Kobo account.</span></td>
+        <td><span class="ar">ملفات نصّية بجانب الكتاب، تصدّرها كما تشاء.</span><span class="en">Plain files beside the book; export them however you like.</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note care">
+    <h4 class="ar">ما لا يفعله KOReader</h4><h4 class="en">What KOReader does not do</h4>
+    <p class="ar">لا يصل إلى متجر كوبو، ولا إلى الكتب المحمية بـDRM التي اشتريتها منه، ولا يزامن مع حسابك. تلك تبقى في نظام كوبو. الناس عادةً يستعملون الاثنين: كوبو للمشتريات، وKOReader لكل ما عداها.</p>
+    <p class="en">It cannot reach the Kobo store, nor DRM-protected books you bought there, nor sync with your account. Those stay in Kobo's system. Most people use both: Kobo for purchases, KOReader for everything else.</p>
+  </div>
+</section>
+<!-- ============ BEFORE ============ -->
+<section class="page" id="p-before" role="tabpanel">
+  <p class="eyebrow">02 — Prerequisites and ground rules</p>
+  <h1 class="ar">قبل أن تبدأ</h1>
+  <h1 class="en">Before you start</h1>
+  <p class="lede ar">خمس دقائق هنا توفّر عليك ساعة من الإصلاح. الشرط الأول غير قابل للتفاوض.</p>
+  <p class="lede en">Five minutes here saves an hour of repair. The first requirement is non-negotiable.</p>
+
+  <h2 class="ar">المتطلّبات</h2>
+  <h2 class="en">Requirements</h2>
+  <ol class="steps">
+    <li><h4 class="ar">NickelMenu مثبّت على الجهاز</h4><h4 class="en">NickelMenu already installed</h4>
+      <p class="ar">هذه الحزمة تُركّب KOReader ولا تُركّب NickelMenu. وبما أن NickelMenu هو الزرّ الوحيد لتشغيل KOReader، فبدونه ستكون ركّبت قارئًا لا تستطيع فتحه.</p>
+      <p class="en">This setup installs KOReader; it does not install NickelMenu. Since NickelMenu is the only button that launches KOReader, without it you will have installed a reader you cannot open.</p>
+      <p class="ar">للتحقّق: هل ترى بندًا إضافيًا في قائمة كوبو الرئيسية لم يأتِ من المصنع؟ إن نعم فهو مثبّت. وإن لا، ثبّته أولًا من موقع NickelMenu.</p>
+      <p class="en">To check: do you see an extra item in Kobo's main menu that didn't come from the factory? Then it's installed. If not, install it first from the NickelMenu site.</p></li>
+    <li><h4 class="ar">حاسوب فيه rsync</h4><h4 class="en">A computer with rsync</h4>
+      <p class="ar">ماك أو لينكس. الأداة مثبّتة مسبقًا في الاثنين. على ويندوز استعمل WSL.</p>
+      <p class="en">macOS or Linux; it ships with both. On Windows, use WSL.</p></li>
+    <li><h4 class="ar">مساحة فارغة ٢٠٠ ميغابايت</h4><h4 class="en">200 MB free on the device</h4>
+      <p class="ar">السكربت يتحقّق من ذلك ويرفض العمل إن لم تكفِ المساحة.</p>
+      <p class="en">The script checks this and refuses to run if there isn't enough.</p></li>
+    <li><h4 class="ar">الجهاز موصول ومفتوح</h4><h4 class="en">The device plugged in and connected</h4>
+      <p class="ar">وصّل الكابل، افتح قفل الجهاز، واضغط <em>Connect</em> على شاشته. سيظهر قرص باسم <code>KOBOeReader</code>.</p>
+      <p class="en">Plug the cable in, unlock the device, and tap <em>Connect</em> on its screen. A volume named <code>KOBOeReader</code> appears.</p></li>
+  </ol>
+
+  <h2 class="ar">على أي نظام؟</h2>
+  <h2 class="en">Which system?</h2>
+  <p class="ar">السكربتات مكتوبة بـbash، وتكتشف موضع الجهاز تلقائيًا على الأنظمة الثلاثة.</p>
+  <p class="en">The scripts are bash, and they locate the device automatically on all three systems.</p>
+  <div class="tw"><table>
+    <thead><tr><th>النظام</th><th>ما تحتاجه · What you need</th><th>موضع الجهاز · Where the Kobo appears</th></tr></thead>
+    <tbody>
+      <tr><td><strong>macOS</strong></td>
+        <td><span class="ar">لا شيء — <code>rsync</code> و<code>git</code> و<code>python3</code> مثبّتة مع النظام.</span>
+            <span class="en">Nothing — <code>rsync</code>, <code>git</code> and <code>python3</code> ship with the system.</span></td>
+        <td class="mono">/Volumes/KOBOeReader</td></tr>
+      <tr><td><strong>Linux</strong></td>
+        <td><span class="ar"><code>sudo apt install git rsync python3</code><br>أو <code>dnf</code> على فيدورا.</span>
+            <span class="en"><code>sudo apt install git rsync python3</code><br>or <code>dnf</code> on Fedora.</span></td>
+        <td class="mono">/media/$USER/KOBOeReader<br>/run/media/$USER/…</td></tr>
+      <tr><td><strong>Windows</strong></td>
+        <td><span class="ar">تحتاج صدفة bash. الأسهل WSL:<br><code>wsl --install</code> في PowerShell كمسؤول، ثم أعد التشغيل، ثم من أوبونتو:<br><code>sudo apt install git rsync python3</code></span>
+            <span class="en">You need a bash shell. WSL is easiest:<br><code>wsl --install</code> in PowerShell as administrator, reboot, then in Ubuntu:<br><code>sudo apt install git rsync python3</code></span></td>
+        <td class="mono">/mnt/e  (WSL)<br>/e  (Git Bash)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note care">
+    <h4 class="ar">ملاحظة على ويندوز</h4><h4 class="en">A note on Windows</h4>
+    <p class="ar">‏Git Bash يعطيك صدفة bash لكنه <strong>لا يتضمّن <code>rsync</code></strong>، وهو أساس هذه السكربتات. لذا WSL أبسط بكثير من محاولة إضافته يدويًا.</p>
+    <p class="en">Git Bash gives you a bash shell but <strong>does not include <code>rsync</code></strong>, which these scripts are built on. WSL is far simpler than adding it by hand.</p>
+    <p class="ar">وإن لم يُعثر على الجهاز على أي نظام، أشِر إليه مباشرة:</p>
+    <p class="en">If the device isn't found on any system, point at it directly:</p>
+    <pre><code>KOBO_MOUNT=/mnt/e ./install.sh</code></pre>
+  </div>
+
+  <h2 class="ar">ثلاث قواعد لا تكسرها</h2>
+  <h2 class="en">Three rules never to break</h2>
+  <div class="grid">
+    <div class="box"><h4 class="ar">١ — أخرِج القرص دائمًا</h4><h4 class="en">1 — Always eject</h4>
+      <p class="ar">لا تنزع الكابل أبدًا قبل إخراج القرص. النزع أثناء الكتابة هو السبب الأول لتلف قاعدة بيانات المكتبة، وعلامته ظهور ملفات باسم <code>FSCK0000.*</code> في مجلداتك.</p>
+      <p class="en">Never pull the cable before ejecting. Unplugging mid-write is the number one cause of library-database corruption; its fingerprint is <code>FSCK0000.*</code> files appearing in your folders.</p></div>
+    <div class="box"><h4 class="ar">٢ — لا تلمس مجلد ‎.kobo</h4><h4 class="en">2 — Leave .kobo alone</h4>
+      <p class="ar">فيه <code>KoboReader.sqlite</code> — حسابك ومكتبتك وتقدّم قراءتك — و<code>device.salt.conf</code>، وهو مفتاح تشفير خاص بجهازك وحده. إفسادهما يعني إعادة ضبط المصنع. (الاستثناء الوحيد: مجلد <code>dict/</code> للقواميس.)</p>
+      <p class="en">It holds <code>KoboReader.sqlite</code> — your account, library and reading progress — and <code>device.salt.conf</code>, an encryption key unique to your device. Corrupting them means a factory reset. (The one exception: the <code>dict/</code> folder.)</p></div>
+    <div class="box"><h4 class="ar">٣ — خذ نسخة احتياطية</h4><h4 class="en">3 — Take a backup</h4>
+      <p class="ar">السكربت يفعلها تلقائيًا قبل كل تغيير. لكن قبل أول تشغيل، انسخ القرص كاملًا بنفسك إلى مجلد على حاسوبك. مرّة واحدة تكفي لراحة البال.</p>
+      <p class="en">The script does this automatically before every change. But before your first run, copy the whole volume somewhere yourself. Once is enough for peace of mind.</p>
+      <pre><code>cp -a /Volumes/KOBOeReader ~/Desktop/kobo-full-backup</code></pre></div>
+  </div>
+
+  <h2 class="ar">مفهوم واحد يجب أن تعرفه: مجلدات ‎.sdr</h2>
+  <h2 class="en">One concept you must understand: .sdr folders</h2>
+  <div class="note warn">
+    <p class="ar">حين تقرأ كتابًا في KOReader يُنشئ بجانبه مجلدًا بالاسم نفسه وامتداد <code>.sdr</code>. داخله كل ما يخصّك في هذا الكتاب: أين توقّفت، وتظليلاتك، وملاحظاتك، وحجم الخط والهوامش التي اخترتها له.</p>
+    <p class="en">When you read a book in KOReader it creates a folder beside it with the same name and a <code>.sdr</code> extension. Inside is everything personal to that book: where you stopped, your highlights, your notes, and the font size and margins you chose for it.</p>
+    <pre><code>روايات/
+  ألف ليلة وليلة.epub          ← the book
+  ألف ليلة وليلة.sdr/          ← your highlights and position
+      metadata.epub.lua</code></pre>
+    <p class="ar"><strong>الربط بينهما بالاسم فقط.</strong> إن غيّرت اسم الكتاب ولم تغيّر اسم مجلده معه، فقدت تظليلاته وموضع قراءتك فيه — لا يحذف KOReader شيئًا، لكنه لن يجد المجلد بعد الآن.</p>
+    <p class="en"><strong>They are linked by filename alone.</strong> Rename the book without renaming its folder identically and you lose that book's highlights and position — KOReader deletes nothing, it simply no longer finds the folder.</p>
+    <p class="ar">هذا أخطر فخّ في تنظيم مكتبة كوبو. ولهذا لا يلمس سكربت التثبيت هذه المجلدات إطلاقًا.</p>
+    <p class="en">This is the single most dangerous trap when reorganising a Kobo library. It is why the installer never touches these folders at all.</p>
+  </div>
+</section>
+<!-- ============ REPO ============ -->
+<section class="page" id="p-repo" role="tabpanel">
+  <p class="eyebrow">03 — What you are cloning</p>
+  <h1 class="ar">محتويات المستودع</h1>
+  <h1 class="en">What's in the repository</h1>
+  <p class="lede ar">نحو ١٣٠ ميغابايت، معظمها القارئ نفسه وقاموس عربي. لا يحتوي على أي كتب ولا أي بيانات شخصية.</p>
+  <p class="lede en">About 130 MB, most of it the reader itself and an Arabic dictionary. It contains no books and no personal data.</p>
+
+  <div class="tree"><ul>
+    <li><span class="n">README.md</span> <span class="c ar">تعليمات مختصرة</span><span class="c en">quick instructions</span></li>
+    <li><span class="n">install.sh</span> <span class="c ar">المثبّت — هذا ما تشغّله</span><span class="c en">the installer — this is what you run</span></li>
+    <li><span class="n">bootstrap.sh</span> <span class="c ar">ينقل كل شيء إلى <code>/opt</code>، مرّة واحدة</span><span class="c en">moves everything to <code>/opt</code>, once</span></li>
+    <li><span class="n">LICENSE</span> · <span class="n">.gitignore</span></li>
+    <li><span class="d">payload/</span> <span class="c ar">كل ما يُنسخ إلى الجهاز</span><span class="c en">everything that gets copied to the device</span></li>
+    <ul>
+      <li><span class="d">.adds/koreader/</span> <span class="c ar">القارئ كاملًا و‏٤٣ إضافة</span><span class="c en">the whole reader and 43 plugins</span></li>
+      <ul>
+        <li><span class="d">data/dict/ar-en/</span> <span class="c ar">عربي←إنجليزي مع فهرس تصريفات — ٣٦ م.ب</span><span class="c en">Arabic→English with inflection index — 36 MB</span></li>
+        <li><span class="d">data/dict/en-ar/</span> <span class="c ar">إنجليزي←عربي — ٢٫٢ م.ب</span><span class="c en">English→Arabic — 2.2 MB</span></li>
+        <li><span class="d">fonts/</span> <span class="c ar">Amiri و AmiriQuran</span><span class="c en">Amiri and AmiriQuran</span></li>
+        <li><span class="n">settings.reader.lua</span> <span class="c ar">الإعدادات، منقّاة من أي هويّة</span><span class="c en">the settings, scrubbed of any identity</span></li>
+      </ul>
+      <li><span class="d">.adds/nm/menu</span> <span class="c ar">بنود قائمة NickelMenu</span><span class="c en">the NickelMenu entries</span></li>
+      <li><span class="d">fonts/</span> <span class="c ar">الخطوط لقارئ كوبو الأصلي</span><span class="c en">fonts for Kobo's own reader</span></li>
+    </ul>
+    <li><span class="n">install-library.sh</span> <span class="c ar">ينسخ الكتب إلى الجهاز</span><span class="c en">copies the books onto a device</span></li>
+    <li><span class="d">library/</span> <span class="c ar">فارغ — ضع كتبك هنا</span><span class="c en">empty — put your books here</span></li>
+    <li><span class="d">tools/</span> <span class="c ar">أداة إعادة الترتيب — شخصية</span><span class="c en">the reorganiser — personal</span></li>
+    <li><span class="d">backups/</span> <span class="c ar">يُنشأ عند التشغيل، ولا يُرفَع للمستودع</span><span class="c en">created at runtime, never committed</span></li>
+  </ul></div>
+
+  <h2 class="ar">الأوامر كلها</h2>
+  <h2 class="en">Every command</h2>
+  <div class="tw"><table>
+    <thead><tr><th>الأمر · Command</th><th>ما يفعله · What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">./bootstrap.sh</td>
+        <td><span class="ar">ينسخ المستودع إلى <code>/opt/kobo/koreader</code> ويجعله ملكك. يحتاج كلمة مرورك مرّة واحدة، ولا يحتاجها بعد ذلك أبدًا. اختياري — يعمل السكربت من أي مكان.</span>
+            <span class="en">Copies the repository to <code>/opt/kobo/koreader</code> and makes it yours. Needs your password once, never again. Optional — the installer runs from anywhere.</span></td></tr>
+      <tr><td class="mono">./install.sh --dry-run</td>
+        <td><span class="ar">يعرض كل تغيير دون كتابة شيء، ثم يلخّص: كم ملفًا جديدًا ومحدَّثًا ومحذوفًا. <strong>شغّله أولًا دائمًا.</strong></span>
+            <span class="en">Lists every change without writing anything, then summarises: how many files are new, updated, deleted. <strong>Always run this first.</strong></span></td></tr>
+      <tr><td class="mono">./install.sh</td>
+        <td><span class="ar">يأخذ نسخة احتياطية، يعرض تحذيرًا، ينتظر أن تكتب <code>INSTALL</code>، ثم يثبّت مع شريط تقدّم.</span>
+            <span class="en">Takes a backup, shows a warning, waits for you to type <code>INSTALL</code>, then installs with a progress display.</span></td></tr>
+      <tr><td class="mono">./install.sh --restore</td>
+        <td><span class="ar">يعيد أحدث نسخة احتياطية — القارئ والإضافات والقواميس والإعدادات كما كانت.</span>
+            <span class="en">Puts the newest backup back — reader, plugins, dictionaries and settings as they were.</span></td></tr>
+      <tr><td class="mono">./install-library.sh --dry-run</td>
+        <td><span class="ar">يعرض الكتب التي ستُنسخ دون نسخ شيء.</span><span class="en">Lists the books that would be copied, copying nothing.</span></td></tr>
+      <tr><td class="mono">./install-library.sh</td>
+        <td><span class="ar">ينسخ ما وضعته في <code>library/</code> إلى الجهاز. <strong>يضيف فقط</strong> — لا يحذف شيئًا موجودًا، ولا يلمس مجلدات <code>.sdr</code>.</span>
+            <span class="en">Copies whatever you put in <code>library/</code> onto the device. <strong>Adds only</strong> — deletes nothing already there, and never touches <code>.sdr</code> folders.</span></td></tr>
+      <tr><td class="mono">./install-library.sh --folder "روايات"</td>
+        <td><span class="ar">مجلد واحد فقط، إن أردت جزءًا من المكتبة.</span><span class="en">A single folder, if you only want part of the collection.</span></td></tr>
+      <tr><td class="mono">KOBO_MOUNT=/Volumes/X ./install.sh</td>
+        <td><span class="ar">إن ظهر جهازك باسم آخر.</span><span class="en">If your device mounts under a different name.</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="ar">حواجز الأمان المدمجة</h2>
+  <h2 class="en">Built-in safety</h2>
+  <div class="grid">
+    <div class="box"><h4 class="ar">يرفض ما ليس كوبو</h4><h4 class="en">Refuses anything that isn't a Kobo</h4>
+      <p class="ar">يتحقّق من وجود <code>.kobo/version</code> قبل أن يكتب حرفًا. لن يلمس قرصًا خارجيًا بالخطأ.</p>
+      <p class="en">Checks for <code>.kobo/version</code> before writing anything. It will not touch an external drive by mistake.</p></div>
+    <div class="box"><h4 class="ar">يتحقّق من المساحة</h4><h4 class="en">Checks free space</h4>
+      <p class="ar">يقيس المطلوب والمتاح ويتوقّف إن لم يكفِ، بدل أن يمتلئ القرص في منتصف النسخ.</p>
+      <p class="en">Measures what's needed against what's free and stops if short, rather than filling the disk mid-copy.</p></div>
+    <div class="box"><h4 class="ar">لا يفشل بصمت</h4><h4 class="en">Never fails silently</h4>
+      <p class="ar">أي خطأ غير متوقّع يوقف السكربت ويطبع رقم السطر. لا يمكن أن يتوقّف دون أن تعرف.</p>
+      <p class="en">Any unexpected error halts the script and prints the line number. It cannot stop without telling you.</p></div>
+    <div class="box"><h4 class="ar">ينظّف ملفات ماك</h4><h4 class="en">Clears macOS clutter</h4>
+      <p class="ar">يحذف ملفات <code>._*</code> التي يزرعها ماك على أقراص FAT32 — يعرضها كوبو ككتب وهمية لا تُفتح.</p>
+      <p class="en">Deletes the <code>._*</code> files macOS scatters on FAT32 volumes — Kobo lists them as phantom books that won't open.</p></div>
+  </div>
+
+  <h2 class="ar">مجلد الكتب</h2>
+  <h2 class="en">The book collection</h2>
+  <p class="ar">مجلد <code>library/</code> يأتي <strong>فارغًا</strong>. استنساخ المستودع لا يضيف ولا يحذف ولا يغيّر أي كتاب على جهازك — وهذا مقصود، فمن يستنسخه لا يريد أن تُمسّ مكتبته.</p>
+  <p class="en">The <code>library/</code> folder arrives <strong>empty</strong>. Cloning adds, removes and changes nothing on your device — deliberately, because whoever clones it does not want their own library disturbed.</p>
+  <p class="ar">لاستعماله: ضع مجلدات كتبك بداخله، مجلدًا لكل موضوع، ثم شغّل <code>install-library.sh</code>. وإن كان فارغًا فالسكربت يخبرك ويخرج دون أن يلمس الجهاز.</p>
+  <p class="en">To use it: drop your book folders inside, one per subject, then run <code>install-library.sh</code>. If it's empty the script tells you and exits without touching the device.</p>
+  <pre><code>library/
+  History/
+    Some Book - Author.epub
+  Novels/
+    Another Book - Author.epub</code></pre>
+  <div class="note warn">
+    <h4 class="ar">لماذا يأتي فارغًا</h4><h4 class="en">Why it ships empty</h4>
+    <p class="ar">مجموعة الكتب تُقاس بالغيغابايتات، وقد يتجاوز ملف واحد حدّ GitHub الصلب (١٠٠ ميغابايت للملف) — فالاستنساخ يفشل. لذا تُشارَك الكتب على قرص أو سحابة، وتُنسخ إلى هذا المجلد يدويًا.</p>
+    <p class="en">A book collection runs to gigabytes, and a single file can exceed GitHub's hard 100 MB per-file limit — the push simply fails. So books are shared on a disk or cloud drive and copied into this folder by hand.</p>
+    <p class="ar">وأكثر هذه الكتب ما زالت محفوظة الحقوق. إعطاء نسخة لصديق شيء، ونشرها حيث يحمّلها أي أحد شيء آخر.</p>
+    <p class="en">Most of these books are also still in copyright. Handing a copy to a friend is one thing; publishing them where anyone can download them is another.</p>
+  </div>
+
+  <div class="note care">
+    <h4 class="ar">مجلد <code>tools/</code> — أداة شخصية</h4>
+    <h4 class="en">The <code>tools/</code> folder — personal tooling</h4>
+    <p class="ar">فيه <code>sync-library.sh</code>، وهو يعيد ترتيب الكتب الموجودة على جهازك: ينقلها ويعيد تسميتها، ويحمل معها مجلدات <code>.sdr</code> فلا تضيع التظليلات.</p>
+    <p class="en">It holds <code>sync-library.sh</code>, which reorganises the books already on your device: moving and renaming them, carrying each <code>.sdr</code> folder along so highlights survive.</p>
+    <p class="ar">لكنه يحتاج ملف خطّة يصف مكتبتك أنت — أي كتاب يذهب أين. هذا الملف شخصي ولا يُرفع، فالمستودع يعطيك الأداة لا خطّة شخص آخر. التفاصيل في <code>tools/README.md</code>.</p>
+    <p class="en">But it needs a plan file describing <em>your</em> library — which book goes where. That file is personal and not committed, so cloning gives you the tool, not someone else's plan. Details in <code>tools/README.md</code>.</p>
+  </div>
+</section>
+<!-- ============ INSTALL ============ -->
+<section class="page" id="p-install" role="tabpanel">
+  <p class="eyebrow">04 — Running the installer</p>
+  <h1 class="ar">التثبيت</h1>
+  <h1 class="en">Installing</h1>
+  <p class="lede ar">أمر واحد. لكن جرّبه أولًا بوضع المعاينة، واقرأ ما سيفعله قبل أن توافق.</p>
+  <p class="lede en">One command. But run it in preview mode first, and read what it intends to do before you agree.</p>
+
+  <ol class="steps">
+    <li><h4 class="ar">استنسخ المستودع</h4><h4 class="en">Clone the repository</h4>
+      <pre><code>git clone https://github.com/s894089/kobo-arabic-setup.git
+cd kobo-arabic-setup</code></pre>
+      <p class="ar">نحو ١٣٠ ميغابايت، فقد يستغرق دقيقة.</p>
+      <p class="en">About 130 MB, so give it a minute.</p></li>
+
+    <li><h4 class="ar">اختياري — انقله إلى <code>/opt</code></h4><h4 class="en">Optional — move it to <code>/opt</code></h4>
+      <pre><code>./bootstrap.sh</code></pre>
+      <p class="ar">ينسخه إلى <code>/opt/kobo/koreader</code> ويجعله ملكك، فتستطيع التشغيل والنسخ الاحتياطي دون <code>sudo</code> بعد ذلك. يطلب كلمة مرورك مرّة واحدة فقط. تخطَّ هذه الخطوة إن كنت تفضّل تشغيله من مكانه.</p>
+      <p class="en">Copies it to <code>/opt/kobo/koreader</code> and makes it yours, so running and backing up afterwards need no <code>sudo</code>. It asks for your password once only. Skip this if you'd rather run it where it is.</p>
+      <pre><code>cd /opt/kobo/koreader</code></pre></li>
+
+    <li><h4 class="ar">عايِن دون تغيير</h4><h4 class="en">Preview without changing anything</h4>
+      <pre><code>./install.sh --dry-run</code></pre>
+      <p class="ar">يعرض كل ملف سيُضاف أو يُستبدل أو يُحذف، ولا يكتب حرفًا واحدًا. شغّله دائمًا أولًا.</p>
+      <p class="en">Lists every file that would be added, replaced or deleted, and writes nothing. Always run this first.</p></li>
+
+    <li><h4 class="ar">ثبّت</h4><h4 class="en">Install</h4>
+      <pre><code>./install.sh</code></pre>
+      <p class="ar">سيعرض خطّته، ثم يسألك <code>Proceed? [y/N]</code>. قبل أن يكتب أي شيء يأخذ نسخة احتياطية من إعدادات جهازك إلى <code>backups/&lt;تاريخ ووقت&gt;/</code>.</p>
+      <p class="en">It prints its plan, then asks <code>Proceed? [y/N]</code>. Before writing anything it backs your device's configuration up to <code>backups/&lt;timestamp&gt;/</code>.</p></li>
+
+    <li><h4 class="ar">أخرِج القرص وأعد التشغيل</h4><h4 class="en">Eject and reboot</h4>
+      <p class="ar">أخرِج القرص، ثم أعد تشغيل الجهاز من <em>NickelMenu ← Reboot</em>. إعادة التشغيل ضرورية.</p>
+      <p class="en">Eject, then restart the device from <em>NickelMenu → Reboot</em>. The reboot is required.</p></li>
+
+    <li><h4 class="ar">افتح KOReader</h4><h4 class="en">Open KOReader</h4>
+      <p class="ar"><em>NickelMenu ← KOReader+</em>. أول تشغيل بطيء لأنه يبني ذاكرة الأغلفة من جديد — هذا طبيعي، انتظره.</p>
+      <p class="en"><em>NickelMenu → KOReader+</em>. The first launch is slow while it rebuilds its cover cache — that's expected; let it finish.</p></li>
+  </ol>
+
+  <h2 class="ar">التراجع — ماذا يفعل <code>--restore</code> بالضبط؟</h2>
+  <h2 class="en">Undoing — what <code>--restore</code> actually does</h2>
+  <p class="ar">كل تشغيل ناجح يترك نسخة مؤرَّخة في <code>backups/</code>. الأمر <code>--restore</code> يأخذ <strong>أحدث</strong> نسخة ويعيدها فوق الجهاز:</p>
+  <p class="en">Every successful run leaves a timestamped copy in <code>backups/</code>. <code>--restore</code> takes the <strong>most recent</strong> one and puts it back over the device:</p>
+  <pre><code>./install.sh --restore
+# asks you to type RESTORE, then:
+#   backups/&lt;newest&gt;/.adds/      → device .adds/      (mirror, with deletion)
+#   backups/&lt;newest&gt;/.kobo/dict/ → device .kobo/dict/  (mirror, with deletion)</code></pre>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>سلوك ‎--restore‎</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ar">إصدار KOReader والإضافات</span><span class="en">KOReader version and plugins</span></td>
+        <td><span class="ar">تعود تمامًا لما كانت عليه — بما فيها الإضافات التي حذفها التثبيت.</span><span class="en">Return exactly as they were — including plugins the install removed.</span></td></tr>
+      <tr><td><span class="ar">قواميس كوبو</span><span class="en">Kobo's dictionaries</span></td>
+        <td><span class="ar">تعود، بما فيها اللغات التي حُذفت.</span><span class="en">Come back, including the languages that were removed.</span></td></tr>
+      <tr><td><span class="ar">إعداداتك في KOReader</span><span class="en">Your KOReader settings</span></td>
+        <td><span class="ar">تعود لما قبل التثبيت.</span><span class="en">Revert to their pre-install state.</span></td></tr>
+      <tr><td><span class="ar">الخطوط في <code>fonts/</code></span><span class="en">Fonts in <code>fonts/</code></span></td>
+        <td><span class="ar"><strong>تبقى.</strong> السكربت ينبّهك — احذفها يدويًا إن أردت.</span><span class="en"><strong>Stay.</strong> The script warns you — delete them by hand if you want them gone.</span></td></tr>
+      <tr><td><span class="ar">كتبك وتظليلاتك وإحصاءاتك</span><span class="en">Your books, highlights, statistics</span></td>
+        <td><span class="ar">لم تُمسّ أصلًا، فلا شيء ليُستعاد.</span><span class="en">Were never touched, so there is nothing to restore.</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note care">
+    <p class="ar">‏<code>--restore</code> يستعيد الأحدث فقط. إن ثبّتّ مرّتين وأردت العودة لما قبل الأولى، انسخ المجلد المؤرَّخ الذي تريده يدويًا.</p>
+    <p class="en"><code>--restore</code> only ever restores the newest backup. If you installed twice and want to go back further, copy the timestamped folder you want by hand.</p>
+  </div>
+
+  <h2 class="ar">إن تعثّرت</h2>
+  <h2 class="en">Troubleshooting</h2>
+  <div class="tw"><table>
+    <thead><tr><th>العَرَض · Symptom</th><th>السبب والحل · Cause and fix</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">No Kobo at /Volumes/KOBOeReader</td>
+        <td><span class="ar">الجهاز غير موصول، أو لم تضغط <em>Connect</em> على شاشته، أو ركّبه النظام باسم آخر. جرّب: <code>KOBO_MOUNT=/Volumes/اسمك ./install.sh</code></span>
+            <span class="en">Not plugged in, or you didn't tap <em>Connect</em> on the device, or it mounted under a different name. Try <code>KOBO_MOUNT=/Volumes/&lt;your-account&gt; ./install.sh</code></span></td></tr>
+      <tr><td class="mono">is mounted but is not a Kobo</td>
+        <td><span class="ar">حماية مقصودة: لم يجد السكربت ملف <code>.kobo/version</code> فرفض الكتابة على قرص قد لا يكون جهازك.</span>
+            <span class="en">A deliberate guard: the script found no <code>.kobo/version</code> and refused to write to a volume that might not be your device.</span></td></tr>
+      <tr><td class="mono">Not enough space</td>
+        <td><span class="ar">احذف كتبًا أو ملفات مؤقّتة. مجلد <code>.adds/koreader/cache/</code> آمن الحذف ويُعاد بناؤه وحده.</span>
+            <span class="en">Delete some books or caches. <code>.adds/koreader/cache/</code> is safe to remove and rebuilds itself.</span></td></tr>
+      <tr><td><span class="ar">لا يظهر زرّ KOReader بعد التثبيت</span><span class="en">No KOReader button after installing</span></td>
+        <td><span class="ar">لم تُعد تشغيل الجهاز، أو أن NickelMenu غير مثبّت أصلًا. أعد التشغيل أولًا.</span>
+            <span class="en">You didn't reboot, or NickelMenu was never installed. Reboot first.</span></td></tr>
+      <tr><td><span class="ar">KOReader يفتح ثم يغلق فورًا</span><span class="en">KOReader opens then closes at once</span></td>
+        <td><span class="ar">غالبًا إضافة غير متوافقة. افتح <code>.adds/koreader/crash.log</code> وانظر آخر سطر، ثم احذف الإضافة المذكورة، أو استعمل <code>--restore</code>.</span>
+            <span class="en">Usually an incompatible plugin. Open <code>.adds/koreader/crash.log</code>, read the last line, delete the plugin it names — or run <code>--restore</code>.</span></td></tr>
+      <tr><td><span class="ar">المكتبة تبدو فارغة في كوبو</span><span class="en">Library looks empty in Kobo</span></td>
+        <td><span class="ar">كوبو لم يفحص الملفات الجديدة بعد: <em>NickelMenu ← Import books</em>.</span>
+            <span class="en">Kobo hasn't rescanned yet: <em>NickelMenu → Import books</em>.</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+<!-- ============ CHANGES ============ -->
+<section class="page" id="p-changes" role="tabpanel">
+  <p class="eyebrow">05 — Full disclosure</p>
+  <h1 class="ar">ما الذي يتغيّر بالضبط</h1>
+  <h1 class="en">Exactly what changes</h1>
+  <p class="lede ar">لا شيء مخفي. هذه كل الملفات التي تُلمس، وكل إعداد يُضبط، وكل إضافة تُزاد أو تُحذف.</p>
+  <p class="lede en">Nothing hidden. Every file touched, every setting set, every plugin added or removed.</p>
+
+  <h2 class="ar">الملفات: ما يُستبدل وما يُترك</h2>
+  <h2 class="en">Files: replaced versus left alone</h2>
+  <div class="tw"><table>
+    <thead><tr><th>المسار · Path</th><th></th><th>ملاحظة · Note</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">.adds/koreader/</td><td><span class="pill no">يُستبدل</span></td>
+        <td><span class="ar">مرآة كاملة مع الحذف — فالإضافات التي أسقطتها هذه الحزمة تُزال فعلًا لا تُترك.</span><span class="en">A full mirror with deletion — so plugins this setup drops are genuinely removed, not left behind.</span></td></tr>
+      <tr><td class="mono">.adds/nm/menu</td><td><span class="pill no">يُستبدل</span></td>
+        <td><span class="ar">بنود قائمة NickelMenu.</span><span class="en">The NickelMenu entries.</span></td></tr>
+      <tr><td class="mono">.kobo/dict/</td><td><span class="pill no">يُستبدل</span></td>
+        <td><span class="ar">قواميس كوبو تُقلَّص إلى الإنجليزية وحدها.</span><span class="en">Kobo's dictionaries trimmed to English only.</span></td></tr>
+      <tr><td class="mono">fonts/</td><td><span class="pill edit">يُضاف إليه</span></td>
+        <td><span class="ar">تُضاف الخطوط ولا يُحذف ما فيه.</span><span class="en">Fonts are added; nothing there is removed.</span></td></tr>
+      <tr><td class="mono">settings/statistics.sqlite3</td><td><span class="pill yes">يبقى</span></td>
+        <td><span class="ar">سجلّ وقت قراءتك.</span><span class="en">Your reading-time record.</span></td></tr>
+      <tr><td class="mono">history.lua · lookup_history · vocabulary</td><td><span class="pill yes">يبقى</span></td>
+        <td><span class="ar">سجلّ الكتب والكلمات التي بحثت عنها.</span><span class="en">Your book history and looked-up words.</span></td></tr>
+      <tr><td class="mono">settings/koinsight.lua</td><td><span class="pill yes">يبقى</span></td>
+        <td><span class="ar">عنوان خادمك الخاص لا يُلمس ولا يُنشر.</span><span class="en">Your own server address is neither touched nor published.</span></td></tr>
+      <tr><td class="mono">‏كل ملفات الكتب و‎*.sdr‎</td><td><span class="pill yes">يبقى</span></td>
+        <td><span class="ar">لا يقترب السكربت من مجلدات كتبك إطلاقًا.</span><span class="en">The script never goes near your book folders at all.</span></td></tr>
+      <tr><td class="mono">.kobo/KoboReader.sqlite</td><td><span class="pill yes">يبقى</span></td>
+        <td><span class="ar">حسابك ومكتبتك — لا يُقرأ ولا يُكتب.</span><span class="en">Your account and library — neither read nor written.</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="ar">الإعدادات التي تُضبط</h2>
+  <h2 class="en">Settings that get set</h2>
+  <div class="tw"><table>
+    <thead><tr><th>الإعداد</th><th>القيمة</th><th>لماذا · Why</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">text_lang_fallback</td><td class="mono">ar</td>
+        <td><span class="ar"><strong>الأهم.</strong> لغة نصّ الكتاب — تضبط فصل المقاطع وتشكيل الحروف وضبط الأسطر. لا علاقة لها بلغة القوائم.</span><span class="en"><strong>The important one.</strong> The book text's language — governs hyphenation, letter shaping and justification. Nothing to do with menu language.</span></td></tr>
+      <tr><td class="mono">language</td><td class="mono">C</td>
+        <td><span class="ar">واجهة KOReader تبقى بالإنجليزية عمدًا. غيّرها من داخل البرنامج إن أردت العربية.</span><span class="en">The KOReader interface deliberately stays English. Change it in-app if you want Arabic.</span></td></tr>
+      <tr><td class="mono">keyboard_layout</td><td class="mono">ar</td>
+        <td><span class="ar">لوحة مفاتيح عربية للبحث داخل الكتب.</span><span class="en">Arabic keyboard for searching inside books.</span></td></tr>
+      <tr><td class="mono">night_mode</td><td class="mono">true</td>
+        <td><span class="ar">خلفية داكنة. أطفئها بإيماءة إن لم تعجبك.</span><span class="en">Dark background. Turn it off with a gesture if you don't like it.</span></td></tr>
+      <tr><td class="mono">frontlight_intensity / warmth</td><td class="mono">3 / 40</td>
+        <td><span class="ar">إضاءة خافتة ودافئة. اضبطها كما يريحك.</span><span class="en">Dim and warm. Adjust to taste.</span></td></tr>
+      <tr><td class="mono">auto_suspend / autoshutdown</td><td class="mono">900s / 3d</td>
+        <td><span class="ar">نوم بعد ١٥ دقيقة، إطفاء بعد ٣ أيام. توفير بطارية.</span><span class="en">Sleep at 15 minutes, power off after 3 days. Battery saving.</span></td></tr>
+      <tr><td class="mono">style_tweaks · in-page footnotes</td><td class="mono">on</td>
+        <td><span class="ar">الحواشي تظهر أسفل الصفحة بدل قفزة إلى آخر الكتاب — ممتاز للكتب المحقّقة.</span><span class="en">Footnotes render at the foot of the page instead of jumping to the end — excellent for annotated texts.</span></td></tr>
+      <tr><td class="mono">start_with</td><td class="mono">filemanager</td>
+        <td><span class="ar">يفتح على المكتبة لا على آخر كتاب.</span><span class="en">Opens the library rather than your last book.</span></td></tr>
+      <tr><td class="mono">timezone</td><td class="mono">Asia/Riyadh</td>
+        <td><span class="ar">⚠ غيّرها إن كنت خارج هذا التوقيت — تؤثّر على الساعة وعلى الدفء التلقائي.</span><span class="en">⚠ Change this if you're in another timezone — it affects the clock and auto-warmth.</span></td></tr>
+      <tr><td class="mono">plugins_disabled · coverbrowser</td><td class="mono">true</td>
+        <td><span class="ar">ضروري: Project: Title يعطّل نفسه صامتًا ما لم يُعطَّل متصفّح الأغلفة الأصلي.</span><span class="en">Required: Project: Title silently disables itself unless the stock cover browser is off.</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="ar">الإضافات المضافة</h2>
+  <h2 class="en">Plugins added</h2>
+  <div class="tw"><table>
+    <tbody>
+      <tr><td><strong>Project: Title</strong></td><td><span class="ar">واجهة مكتبة بديلة أوضح وأسرع تصفّحًا من الأصلية. تستبدل متصفّح الأغلفة.</span><span class="en">A clearer, faster library screen that replaces the stock cover browser.</span></td></tr>
+      <tr><td><strong>App Store</strong></td><td><span class="ar">تتصفّح إضافات KOReader وتثبّتها وتحدّثها من الجهاز نفسه دون كابل. أهم أداة صيانة هنا.</span><span class="en">Browse, install and update KOReader plugins from the device itself, no cable. The most useful maintenance tool here.</span></td></tr>
+      <tr><td><strong>LocalSend</strong></td><td><span class="ar">نقل ملفات لاسلكي بين هاتفك أو حاسوبك والجهاز، بلا خادم ولا إعداد.</span><span class="en">Wireless file transfer between phone or computer and the device, with no server and no setup.</span></td></tr>
+      <tr><td><strong>Annotations Viewer</strong></td><td><span class="ar">يعرض تظليلاتك وملاحظاتك عبر كل الكتب في مكان واحد.</span><span class="en">Shows your highlights and notes across every book in one place.</span></td></tr>
+      <tr><td><strong>Menu Customizer</strong></td><td><span class="ar">يخفي ما لا تستعمله من القوائم.</span><span class="en">Hides menu items you don't use.</span></td></tr>
+      <tr><td><strong>KoInsight</strong></td><td><span class="ar">يرفع إحصاءات قراءتك إلى لوحة تحليلات تستضيفها بنفسك. اختياري ويحتاج خادمًا.</span><span class="en">Sends reading statistics to a dashboard you host yourself. Optional; needs a server.</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="ar">المحتوى المضاف</h2>
+  <h2 class="en">Content added</h2>
+  <div class="tw"><table>
+    <tbody>
+      <tr><td><strong>Amiri</strong></td><td class="mono">5 faces</td><td><span class="ar">خط نسخ كلاسيكي، ومعه <strong>AmiriQuran</strong> المضبوط للتشكيل الكامل.</span><span class="en">A classical naskh face, plus <strong>AmiriQuran</strong> tuned for fully-vocalised text.</span></td></tr>
+      <tr><td><span class="ar">عربي ← إنجليزي</span><span class="en">Arabic → English</span></td><td class="mono">26,578</td><td><span class="ar">مع فهرس تصريفات، فيتعرّف على الكلمة ولو جاءت بسوابق ولواحق.</span><span class="en">With an inflection index, so it recognises a word even with prefixes and suffixes attached.</span></td></tr>
+      <tr><td><span class="ar">إنجليزي ← عربي</span><span class="en">English → Arabic</span></td><td class="mono">87,423</td><td><span class="ar">خفيف جدًا، للكتب الإنجليزية.</span><span class="en">Very light; for English books.</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+<!-- ============ USING ============ -->
+<section class="page" id="p-using" role="tabpanel">
+  <p class="eyebrow">06 — Day to day</p>
+  <h1 class="ar">استخدام KOReader</h1>
+  <h1 class="en">Using KOReader</h1>
+  <p class="lede ar">إن لم تستعمله من قبل فقد تبدو قوائمه كثيرة. المفتاح بسيط: <strong>أعلى الشاشة</strong> للكتاب، و<strong>أسفلها</strong> للنص.</p>
+  <p class="lede en">If you've never used it, the menus can look overwhelming. The key is simple: <strong>tap the top</strong> for the book, <strong>tap the bottom</strong> for the text.</p>
+
+  <h2 class="ar">أساسيات التنقّل</h2>
+  <h2 class="en">Navigation basics</h2>
+  <div class="tw"><table>
+    <thead><tr><th>الحركة · Action</th><th>النتيجة · Result</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ar">نقرة في أعلى الصفحة</span><span class="en">Tap the top of the page</span></td><td><span class="ar">القائمة العلوية: الفهرس، العلامات، البحث، الإعدادات.</span><span class="en">Top menu: table of contents, bookmarks, search, settings.</span></td></tr>
+      <tr><td><span class="ar">نقرة في أسفل الصفحة</span><span class="en">Tap the bottom of the page</span></td><td><span class="ar">شريط التحكّم بالنص: الخط، الحجم، التباعد، الهوامش، لغة النص.</span><span class="en">Text controls: font, size, spacing, margins, text language.</span></td></tr>
+      <tr><td><span class="ar">نقرة يمينًا أو يسارًا</span><span class="en">Tap left or right</span></td><td><span class="ar">صفحة تالية أو سابقة.</span><span class="en">Next or previous page.</span></td></tr>
+      <tr><td><span class="ar">ضغطة مطوّلة على كلمة</span><span class="en">Long-press a word</span></td><td><span class="ar">القاموس. اسحب لتوسيع التحديد ثم ظلّل أو علّق.</span><span class="en">The dictionary. Drag to extend the selection, then highlight or annotate.</span></td></tr>
+      <tr><td><span class="ar">ضغطة مطوّلة في الزاوية العليا اليمنى</span><span class="en">Long-press the top-right corner</span></td><td><span class="ar">تحديث الشاشة كاملًا — يمسح أثر الحبر المتبقّي.</span><span class="en">Full screen refresh — clears leftover e-ink ghosting.</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="ar">شكل المكتبة: شبكة أغلفة أم قائمة؟</h2>
+  <h2 class="en">Library view: cover grid or list?</h2>
+  <p class="ar">إضافة Project: Title تحلّ محلّ متصفّح الأغلفة الأصلي، وتبدأ افتراضيًا بعرض <strong>قائمة</strong>. إن كنت تفضّل شبكة الأغلفة الغنيّة، غيّرها من:</p>
+  <p class="en">Project: Title replaces the stock cover browser and starts in <strong>list</strong> mode by default. If you prefer the richer cover grid, change it at:</p>
+  <pre><code>File browser  →  ⚙ (settings tab)  →  Project: Title settings  →  Cover Grid</code></pre>
+  <p class="ar">الأنماط الأربعة المتاحة:</p>
+  <p class="en">The four available modes:</p>
+  <div class="tw"><table>
+    <tbody>
+      <tr><td><strong>Cover Grid</strong></td><td class="mono">mosaic_image</td><td><span class="ar">شبكة أغلفة — الأغنى بصريًا، وهو ما تشحنه هذه الحزمة افتراضيًا.</span><span class="en">A grid of covers — the richest look, and what this setup ships as the default.</span></td></tr>
+      <tr><td><strong>Cover List</strong></td><td class="mono">list_image_meta</td><td><span class="ar">قائمة بغلاف صغير وعنوان ومؤلف.</span><span class="en">A list with a small cover, title and author.</span></td></tr>
+      <tr><td><strong>Details List</strong></td><td class="mono">list_only_meta</td><td><span class="ar">قائمة ببيانات بلا أغلفة.</span><span class="en">Metadata only, no covers.</span></td></tr>
+      <tr><td><strong>Filenames List</strong></td><td class="mono">list_no_meta</td><td><span class="ar">أسماء الملفات فقط — الأسرع.</span><span class="en">Filenames only — the fastest.</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="note tip">
+    <p class="ar">يمكن أيضًا ربط التبديل بإيماءة: <em>Gestures ← Project: Title ← Cover Grid</em>، فتنتقل بين الشبكة والقائمة بحركة واحدة.</p>
+    <p class="en">You can also bind the switch to a gesture: <em>Gestures → Project: Title → Cover Grid</em>, so you flip between grid and list with one movement.</p>
+  </div>
+
+  <h2 class="ar">إعداد يستحق دقيقتين: الملفات الشخصية</h2>
+  <h2 class="en">Two minutes well spent: Profiles</h2>
+  <p class="ar">«Profile» حزمة إعدادات محفوظة باسم، تُطبَّق كلها بضغطة أو إيماءة. بدل أن تدخل ست قوائم لكل نوع من الكتب، تضغط زرًّا واحدًا. هذه أكبر قفزة في الراحة اليومية، ومعظم الناس لا يستعملونها.</p>
+  <p class="en">A profile is a named bundle of settings applied all at once by a tap or gesture. Instead of walking six menus for each kind of book, you press one button. It's the biggest day-to-day comfort gain, and most people never use it.</p>
+  <ol class="steps">
+    <li><h4 class="ar">اضبط كتابًا كما تحبّه تمامًا</h4><h4 class="en">Set one book up exactly as you like it</h4>
+      <p class="ar">الخط، الحجم، الهوامش، التباعد، لغة النص.</p><p class="en">Font, size, margins, spacing, text language.</p></li>
+    <li><h4 class="ar">‏<em>Plugins ← Profiles ← New</em></h4><h4 class="en"><em>Plugins → Profiles → New</em></h4>
+      <p class="ar">سمّه «عربي» مثلًا، واختر أي الإعدادات يحفظها.</p><p class="en">Name it &quot;Arabic&quot;, and pick which settings it captures.</p></li>
+    <li><h4 class="ar">اربطه بإيماءة</h4><h4 class="en">Bind it to a gesture</h4>
+      <p class="ar">‏<em>Gestures ← Profiles ← اختر إيماءة</em>. مثلًا مسحة قُطرية.</p><p class="en"><em>Gestures → Profiles → choose one</em>. A diagonal swipe, say.</p></li>
+  </ol>
+  <p class="ar">ثلاثة ملفات تكفي معظم القرّاء العرب: <strong>«عربي»</strong> بخط نسخ وتباعد مريح ولغة نص عربية، <strong>«PDF»</strong> بقصّ الهوامش وتكبير العمود، <strong>«مصحف»</strong> بخط AmiriQuran وحجم أكبر وتباعد أوسع للتشكيل.</p>
+  <p class="en">Three profiles cover most Arabic readers: <strong>&quot;Arabic&quot;</strong> — naskh face, comfortable leading, Arabic text language; <strong>&quot;PDF&quot;</strong> — margin cropping and column zoom; <strong>&quot;Quran&quot;</strong> — AmiriQuran, larger size, extra leading for the diacritics.</p>
+
+  <h2 class="ar">إعدادات مختلفة لكل مجلد</h2>
+  <h2 class="en">Different settings per folder</h2>
+  <p class="ar">إضافة <code>docsettingtweak</code> المرفقة تتيح إعدادات افتراضية مختلفة لكل مجلد. مع مكتبة مرتّبة بالموضوع يصبح هذا قويًا: مجلد المصاحف بخط أكبر تلقائيًا، ومجلد الروايات بتباعد مريح، دون أن تضبط شيئًا في كل مرة.</p>
+  <p class="en">The bundled <code>docsettingtweak</code> plugin allows different defaults per folder. With a library organised by subject that becomes powerful: your Quran folder opens at a larger size automatically, your novels folder with comfortable leading, without setting anything each time.</p>
+
+  <h2 class="ar">القاموس</h2>
+  <h2 class="en">The dictionary</h2>
+  <p class="ar">ضغطة مطوّلة على أي كلمة. القاموسان مركّبان مسبقًا — عربي‑إنجليزي وإنجليزي‑عربي. لإضافة المزيد لاحقًا: ضع مجلد StarDict في <code>.adds/koreader/data/dict/</code>، أو نزّله من داخل البرنامج عبر <em>Settings ← Dictionary ← Download dictionaries</em> (يحتاج واي‑فاي).</p>
+  <p class="en">Long-press any word. Both dictionaries are pre-installed — Arabic-English and English-Arabic. To add more later: drop a StarDict folder into <code>.adds/koreader/data/dict/</code>, or fetch one in-app via <em>Settings → Dictionary → Download dictionaries</em> (needs Wi-Fi).</p>
+  <div class="note tip">
+    <p class="ar">القاموس العربي المرفق يحوي فهرس تصريفات، فيتعرّف على الكلمة ولو التصقت بها سوابق ولواحق مثل «والكتاب». هذا ما يجعله صالحًا فعلًا للعربية، وهو سبب حجمه.</p>
+    <p class="en">The bundled Arabic dictionary carries an inflection index, so it recognises a word even with prefixes and suffixes attached — <span dir="rtl">والكتاب</span> resolves to <span dir="rtl">كتاب</span>. That's what makes it genuinely usable for Arabic, and why it's large.</p>
+  </div>
+
+  <h2 class="ar">تصدير التظليلات</h2>
+  <h2 class="en">Exporting highlights</h2>
+  <p class="ar">‏<em>القائمة العلوية ← أدوات ← Export highlights</em>. الصيغة المضبوطة مسبقًا Markdown، تُحفظ بجانب الكتاب. مع <strong>Annotations Viewer</strong> ترى تظليلات كل كتبك في شاشة واحدة — مفيد جدًا لمكتبة بحثية.</p>
+  <p class="en"><em>Top menu → tools → Export highlights</em>. The preset format is Markdown, saved beside the book. With <strong>Annotations Viewer</strong> you can see highlights from every book on one screen — genuinely useful for a research library.</p>
+</section>
+<!-- ============ ORGANISE ============ -->
+<section class="page" id="p-organise" role="tabpanel">
+  <p class="eyebrow">07 — Library organisation</p>
+  <h1 class="ar">تنظيم المكتبة</h1>
+  <h1 class="en">Organising your library</h1>
+  <p class="lede ar">الخلط بين المجلدات والمجموعات هو أكثر ما يُربك أصحاب كوبو. الفرق بينهما بسيط لكنه يغيّر كل شيء.</p>
+  <p class="lede en">Confusing folders with collections is what trips up most Kobo owners. The distinction is simple, and it changes everything.</p>
+
+  <div class="grid">
+    <div class="box">
+      <h4 class="ar">المجلدات ترتّب الملفات</h4><h4 class="en">Folders organise files</h4>
+      <p class="ar">مجلد حقيقي على القرص. الكتاب في مجلد واحد فقط لا غير. تنشئها بالسحب والإفلات من حاسوبك، ويراها KOReader ولا يراها قارئ كوبو بالبنية نفسها.</p>
+      <p class="en">A real folder on disk. A book lives in exactly one, never two. You make them by drag-and-drop from your computer; KOReader shows them as they are, Kobo's own reader does not.</p>
+      <p class="ar"><strong>استعملها للموضوع:</strong> تاريخ، روايات، تفسير، فكر.</p>
+      <p class="en"><strong>Use them for subject:</strong> history, novels, tafsir, philosophy.</p>
+    </div>
+    <div class="box">
+      <h4 class="ar">المجموعات ترتّب القراءة</h4><h4 class="en">Collections organise reading</h4>
+      <p class="ar">وسم داخل قاعدة بيانات كوبو، لا مجلد. الكتاب الواحد يظهر في عدة مجموعات دون أن يُنسخ أو يُنقل. تراها في واجهة كوبو الأصلية.</p>
+      <p class="en">A tag inside Kobo's database, not a folder. One book can appear in several collections without being copied or moved. They show up in Kobo's own interface.</p>
+      <p class="ar"><strong>استعملها للحالة:</strong> أقرأ الآن، التالي، أنهيته، أعد قراءته.</p>
+      <p class="en"><strong>Use them for status:</strong> reading now, up next, finished, re-read.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <h4 class="ar">الخطأ الشائع</h4><h4 class="en">The common mistake</h4>
+    <p class="ar">إنشاء مجلد باسم «أقرأ الآن». يبدو منطقيًا، لكنه يعني أن الكتاب يترك موضوعه ليدخله، ثم عليك أن تتذكّر أين كان لتعيده. وبعد شهور يصبح المجلد مقبرة لكتب بدأتها ولم تكملها.</p>
+    <p class="en">Creating a folder called &quot;Reading now&quot;. It seems sensible, but it means a book leaves its subject to enter it, and you must then remember where it came from to put it back. After a few months the folder becomes a graveyard of books you started and never finished.</p>
+    <p class="ar"><strong>القاعدة:</strong> الموضوع مجلد، والحالة مجموعة. لكل كتاب بيت واحد دائم، وأوسمة متغيّرة.</p>
+    <p class="en"><strong>The rule:</strong> subject is a folder, status is a collection. Every book keeps one permanent home and wears changing tags.</p>
+  </div>
+
+  <h2 class="ar">إنشاء مجموعة</h2>
+  <h2 class="en">Creating a collection</h2>
+  <ol class="steps">
+    <li><h4 class="ar">على الجهاز — للكتب القليلة</h4><h4 class="en">On the device — for a few books</h4>
+      <p class="ar">اضغط مطوّلًا على غلاف الكتاب ← <em>Add to collection</em> ← أنشئ مجموعة أو اختر واحدة. دقيقتان لمجموعتين.</p>
+      <p class="en">Long-press a book cover → <em>Add to collection</em> → create one or pick an existing one. Two minutes for two collections.</p></li>
+    <li><h4 class="ar">عبر كاليبر — للكتب الكثيرة</h4><h4 class="en">Via Calibre — for many books</h4>
+      <p class="ar">برنامج <a href="https://calibre-ebook.com">Calibre</a> على الحاسوب مع إضافة <strong>KoboUtilities</strong> يتيح تحديد عشرات الكتب وإنشاء المجموعة دفعة واحدة، وتعديل البيانات والأغلفة. إن كانت مكتبتك بالمئات فهذا يوفّر ساعات.</p>
+      <p class="en"><a href="https://calibre-ebook.com">Calibre</a> on your computer with the <strong>KoboUtilities</strong> plugin lets you select dozens of books and create the collection in one go, and fix metadata and covers too. If your library runs to hundreds, this saves hours.</p></li>
+  </ol>
+  <div class="note care">
+    <p class="ar">يمكن تقنيًا كتابة المجموعات مباشرة في <code>KoboReader.sqlite</code>، ولا أنصح به. هو الملف الذي يحمل حسابك ومكتبتك، وخطأ فيه يعني إعادة ضبط المصنع. الطريقتان أعلاه تعطيان النتيجة نفسها بلا مخاطرة.</p>
+    <p class="en">You can technically write collections straight into <code>KoboReader.sqlite</code>. Don't. It's the file holding your account and library, and a mistake there means a factory reset. Both methods above give the same result with no risk.</p>
+  </div>
+
+  <h2 class="ar">تسمية الملفات</h2>
+  <h2 class="en">Naming your files</h2>
+  <p class="ar">ثبّت صيغة واحدة والتزم بها. الأكثر عملية:</p>
+  <p class="en">Pick one convention and hold to it. The most practical:</p>
+  <pre><code>اسم الكتاب - اسم المؤلف.epub
+البيان والتبيين - الجاحظ.epub
+موسوعة تاريخ الأفكار ج1 - فيليب واينر.epub</code></pre>
+  <ul>
+    <li><span class="ar">تجنّب الشُّرَط السفلية <code>_</code> — تأتي من مواقع التحميل وتجعل القوائم قبيحة.</span>
+        <span class="en">Avoid underscores — they come from download sites and make listings ugly.</span></li>
+    <li><span class="ar">تجنّب اللواحق مثل <code>(1)</code> و<code> 2</code> — إن كانت نسخة مكررة فاحذفها، وإن كانت جزءًا فاكتب <code>ج2</code>.</span>
+        <span class="en">Avoid suffixes like <code>(1)</code> and <code> 2</code> — if it's a duplicate, delete it; if it's a volume, write <code>ج2</code>.</span></li>
+    <li><span class="ar">وحّد اسم المؤلف عبر كتبه كلها، حتى تتجمّع في عرض «المؤلفون».</span>
+        <span class="en">Spell each author identically across all their books, so they group in author view.</span></li>
+  </ul>
+
+  <div class="note warn">
+    <h4 class="ar">قبل أن تعيد التسمية: تذكّر مجلدات ‎.sdr</h4>
+    <h4 class="en">Before renaming anything: remember the .sdr folders</h4>
+    <p class="ar">كل كتاب قرأته له مجلد <code>.sdr</code> بجانبه يحمل تظليلاتك وموضع قراءتك، والربط بينهما <strong>بالاسم</strong>. إن أعدت تسمية الكتاب فأعد تسمية مجلده بالطريقة نفسها في الوقت نفسه.</p>
+    <p class="en">Every book you've read has a <code>.sdr</code> folder beside it holding your highlights and position, linked <strong>by name</strong>. If you rename the book, rename its folder identically at the same time.</p>
+    <pre><code>قبل · before          بعد · after
+كتاب_قديم.epub    →   الكتاب - المؤلف.epub
+كتاب_قديم.sdr/    →   الكتاب - المؤلف.sdr/   ← لا تنسَ هذا</code></pre>
+  </div>
+
+  <h2 class="ar">بنية مقترحة لمكتبة عربية</h2>
+  <h2 class="en">A structure that works for an Arabic library</h2>
+  <p class="ar">نقطة بداية، لا وصفة. المهم أن يكون لكل كتاب موضع واحد بديهي:</p>
+  <p class="en">A starting point, not a prescription. What matters is that each book has one obvious home:</p>
+  <div class="tree"><ul>
+    <li><span class="d">قرآن وتفسير/</span> <span class="c ar">المصاحف والتفاسير وعلوم القرآن</span><span class="c en">mushafs, tafsir, Quranic sciences</span></li>
+    <li><span class="d">كتب إسلامية/</span> <span class="c ar">عقيدة وفقه وحديث ورقائق</span><span class="c en">creed, jurisprudence, hadith, devotional</span></li>
+    <li><span class="d">سير وتراجم/</span> <span class="c ar">السير الذاتية والمذكّرات</span><span class="c en">biography and memoir</span></li>
+    <li><span class="d">تاريخ/</span></li>
+    <li><span class="d">أدب وتراث/</span> <span class="c ar">التراث والشعر والمقالات</span><span class="c en">classical literature, poetry, essays</span></li>
+    <li><span class="d">روايات/</span></li>
+    <li><span class="d">فكر ونقد/</span> <span class="c ar">الفكر المعاصر والفلسفة</span><span class="c en">contemporary thought and philosophy</span></li>
+    <li><span class="d">تطوير وعمل/</span></li>
+  </ul></div>
+  <p class="ar">ثم مجموعتان فقط على الجهاز: <em>أقرأ الآن</em> و<em>التالي</em>. هذا كل ما تحتاجه.</p>
+  <p class="en">Then just two collections on the device: <em>Reading now</em> and <em>Up next</em>. That's all you need.</p>
+</section>
+<!-- ============ CARE ============ -->
+<section class="page" id="p-care" role="tabpanel">
+  <p class="eyebrow">08 — Keeping it working</p>
+  <h1 class="ar">الصيانة</h1>
+  <h1 class="en">Maintenance</h1>
+  <p class="lede ar">أربع عادات تُبقي الجهاز سليمًا، وقاعدة واحدة تمنع أشهر عطل يصيب هذه التركيبة.</p>
+  <p class="lede en">Four habits keep the device healthy, and one rule prevents the most common way this setup breaks.</p>
+
+  <h2 class="ar">تحديث KOReader — اقرأ هذا أولًا</h2>
+  <h2 class="en">Updating KOReader — read this first</h2>
+  <div class="note warn">
+    <p class="ar">إضافات المجتمع مربوطة بإصدار KOReader بعينه. حين تحدّث النواة قد تتوقّف إضافة صُنعت لإصدار أقدم — وأكثر ما يقع هذا مع <strong>Project: Title</strong> لأنه يمسّ واجهة المكتبة مباشرة.</p>
+    <p class="en">Community plugins are tied to a specific KOReader version. Updating the core can break a plugin built for an older one — most often <strong>Project: Title</strong>, because it touches the library interface directly.</p>
+    <p class="ar"><strong>القاعدة:</strong> حين تحدّث KOReader، حدّث Project: Title في الوقت نفسه إلى النسخة التي تذكر إصدارك صراحةً في اسمها. لا تفترض أن الأحدث دائمًا هو الصحيح — الأحدث قد يكون مصنوعًا لإصدار لم تصل إليه بعد.</p>
+    <p class="en"><strong>The rule:</strong> when you update KOReader, update Project: Title in the same session to the release whose name explicitly states your version. Don't assume newest is correct — the newest may target a version you haven't reached.</p>
+    <p class="ar">أسهل طريقة لتجنّب هذا كلّه: إضافة <strong>App Store</strong> المرفقة تتولّى مطابقة الإصدارات نيابةً عنك.</p>
+    <p class="en">The easiest way to sidestep all of it: the bundled <strong>App Store</strong> plugin handles version matching for you.</p>
+  </div>
+
+  <h2 class="ar">تحديث نظام كوبو نفسه</h2>
+  <h2 class="en">Updating Kobo's own firmware</h2>
+  <p class="ar">تحديث النظام قد <strong>يحذف NickelMenu</strong>. وبما أنه بابك الوحيد إلى KOReader، ستجد نفسك بقارئ لا تستطيع فتحه. الحلّ ليس تجنّب التحديث، بل ترتيب الخطوات:</p>
+  <p class="en">A firmware update can <strong>remove NickelMenu</strong>. Since it's your only door into KOReader, you'd be left with a reader you can't open. The answer isn't to avoid updating, it's to sequence it:</p>
+  <ol class="steps">
+    <li><h4 class="ar">احتفظ بمثبّت NickelMenu على الجهاز</h4><h4 class="en">Keep the NickelMenu installer on the device</h4>
+      <p class="ar">ضع ملف <code>KoboRoot.tgz</code> الخاص به في مكان تتذكّره قبل أن تحدّث.</p>
+      <p class="en">Park its <code>KoboRoot.tgz</code> somewhere you'll remember before you update.</p></li>
+    <li><h4 class="ar">حدّث</h4><h4 class="en">Update</h4></li>
+    <li><h4 class="ar">أعد تثبيت NickelMenu فورًا</h4><h4 class="en">Reinstall NickelMenu immediately</h4>
+      <p class="ar">انسخ <code>KoboRoot.tgz</code> إلى مجلد <code>.kobo/</code> ثم أخرِج القرص. يثبّت نفسه عند إعادة التشغيل ويختفي الملف.</p>
+      <p class="en">Copy <code>KoboRoot.tgz</code> into <code>.kobo/</code> and eject. It installs itself on reboot and the file disappears.</p></li>
+  </ol>
+  <p class="ar">‏KOReader نفسه ينجو من تحديثات النظام لأنه يسكن في <code>.adds/</code> ولا يمسّه المحدّث.</p>
+  <p class="en">KOReader itself survives firmware updates because it lives in <code>.adds/</code>, which the updater leaves alone.</p>
+
+  <h2 class="ar">عادات تستحق التبنّي</h2>
+  <h2 class="en">Habits worth adopting</h2>
+  <div class="grid">
+    <div class="box"><h4 class="ar">نسخة احتياطية شهرية</h4><h4 class="en">A monthly backup</h4>
+      <p class="ar">أمر واحد، ويغطّي كل ما يهم: كتبك وتظليلاتك وإعداداتك.</p>
+      <p class="en">One command, covering everything that matters: books, highlights, settings.</p>
+      <pre><code>cp -a /Volumes/KOBOeReader \
+   ~/kobo-backup-$(date +%Y%m)</code></pre></div>
+    <div class="box"><h4 class="ar">أخرِج القرص دائمًا</h4><h4 class="en">Always eject</h4>
+      <p class="ar">إن رأيت ملفات <code>FSCK0000.*</code> ظهرت في مجلداتك فهذه شهادة على أن الكابل نُزع أثناء الكتابة. آمنة الحذف، لكن غيّر العادة.</p>
+      <p class="en">If <code>FSCK0000.*</code> files appear in your folders, that's evidence the cable came out mid-write. Safe to delete, but change the habit.</p></div>
+    <div class="box"><h4 class="ar">نظّف الذاكرة المؤقّتة</h4><h4 class="en">Clear the cache</h4>
+      <p class="ar">مجلد <code>.adds/koreader/cache/</code> ينمو بلا حدّ ويُعاد بناؤه وحده. احذفه متى ضاقت المساحة.</p>
+      <p class="en"><code>.adds/koreader/cache/</code> grows without bound and rebuilds itself. Delete it whenever space runs short.</p></div>
+    <div class="box"><h4 class="ar">صدّر تظليلاتك</h4><h4 class="en">Export your highlights</h4>
+      <p class="ar">لا تتركها حبيسة الجهاز. تصدير دوري إلى ملاحظاتك يحوّل القراءة إلى مادة تعود إليها.</p>
+      <p class="en">Don't leave them stranded on the device. Exporting periodically into your notes turns reading into material you can return to.</p></div>
+  </div>
+
+  <h2 class="ar">إزالة كل شيء</h2>
+  <h2 class="en">Removing everything</h2>
+  <p class="ar">لا شيء هنا دائم:</p>
+  <p class="en">None of this is permanent:</p>
+  <ul>
+    <li><span class="ar"><strong>KOReader:</strong> احذف مجلد <code>.adds/koreader/</code>.</span><span class="en"><strong>KOReader:</strong> delete the <code>.adds/koreader/</code> folder.</span></li>
+    <li><span class="ar"><strong>NickelMenu:</strong> أنشئ ملفًا فارغًا اسمه <code>uninstall</code> داخل <code>.adds/nm/</code>. أو أطفئ الجهاز خلال ٢٠ ثانية من تشغيله، فيُزيل نفسه تلقائيًا — مِفصل أمان مدمج.</span>
+        <span class="en"><strong>NickelMenu:</strong> create an empty file named <code>uninstall</code> inside <code>.adds/nm/</code>. Or power the device off within 20 seconds of switching it on and it uninstalls itself — a built-in failsafe.</span></li>
+    <li><span class="ar"><strong>هذه الحزمة وحدها:</strong> <code>./install.sh --restore</code></span><span class="en"><strong>Just this setup:</strong> <code>./install.sh --restore</code></span></li>
+  </ul>
+  <p class="ar">لا شيء من ذلك يمسّ كتبك ولا حسابك في كوبو.</p>
+  <p class="en">None of it touches your books or your Kobo account.</p>
+
+  <div class="foot">
+    <p class="ar">هذا الدليل يصف حزمة إعداد مفتوحة. لا يحتوي على أي بيانات شخصية، ويمكن مشاركته بحرّية.</p>
+    <p class="en">This guide documents an open setup bundle. It contains no personal data and may be shared freely.</p>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+  var body = document.body;
+  function setLang(l){
+    body.className = 'lang-' + l;
+    document.querySelectorAll('.langsw button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.dataset.lang === l ? 'true' : 'false');
+    });
+    try{ localStorage.setItem('kobo-lang', l); }catch(e){}
+  }
+  document.querySelectorAll('.langsw button').forEach(function(b){
+    b.addEventListener('click', function(){ setLang(b.dataset.lang); });
+  });
+  var saved = null; try{ saved = localStorage.getItem('kobo-lang'); }catch(e){}
+  setLang(saved || 'both');
+
+  document.querySelectorAll('nav.tabs button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('nav.tabs button').forEach(function(o){
+        o.setAttribute('aria-selected', o === b ? 'true' : 'false');
+      });
+      document.querySelectorAll('.page').forEach(function(p){
+        p.classList.toggle('on', p.id === 'p-' + b.dataset.tab);
+      });
+      window.scrollTo({top:0, behavior:'instant'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

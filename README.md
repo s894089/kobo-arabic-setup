@@ -5,6 +5,10 @@ typefaces, Arabic↔English dictionaries, and a curated set of plugins.
 
 **Your books, reading positions, highlights and statistics are never touched.**
 
+📖 **[Full guide — Arabic and English](docs/guide.html)** — what a Kobo, NickelMenu
+and KOReader each are, per-platform setup, exactly what changes, and how to
+organise a library. Open it in a browser after cloning.
+
 ---
 
 ## What it installs
