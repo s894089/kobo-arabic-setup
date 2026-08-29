@@ -83,7 +83,7 @@ confirm() {  # confirm <prompt> <required-word>
 
 ok()   { printf '%s✓%s %s\n' "$c_ok"  "$c_off" "$*"; }
 warn() { printf '%s!%s %s\n' "$c_warn" "$c_off" "$*"; }
-die()  { printf '%s✗%s %s\n' "$c_err" "$c_off" "$*" >&2; exit 1; }
+die()  { printf '%s✗%s %b\n' "$c_err" "$c_off" "$*" >&2; exit 1; }
 
 # Sizing helpers. On a Kobo, find/du exit non-zero because of unreadable system
 # folders; under `set -e` that would abort the script silently. These never fail.
@@ -96,8 +96,7 @@ step() { printf '\n%s▸ %s%s\n' $'\033[1m' "$*" "$c_off"; }
 step "Checking prerequisites"
 command -v rsync >/dev/null || die "rsync not found. Install it and retry."
 [ -d "$PAYLOAD" ] || die "payload/ missing next to this script. Is the repo complete?"
-[ -d "$DEVICE" ]  || die "No Kobo found. Plug it in, unlock it, and tap Connect on its screen.\n   Looked in /Volumes, /media, /run/media, /mnt and drive letters.\n   If it is elsewhere:  KOBO_MOUNT=/path/to/kobo ./install.sh
-   (If it mounts elsewhere: KOBO_MOUNT=/Volumes/YOURNAME ./install.sh)"
+[ -d "$DEVICE" ]  || die "No Kobo found. Plug it in, unlock it, and tap Connect on its screen.\n   Looked in /Volumes, /media, /run/media, /mnt and drive letters.\n   If it is elsewhere:  KOBO_MOUNT=/path/to/kobo ./install.sh"
 [ -f "$DEVICE/.kobo/version" ] || die "$DEVICE is mounted but is not a Kobo — refusing to touch it."
 
 FW="$(cut -d, -f3 "$DEVICE/.kobo/version" 2>/dev/null || echo unknown)"
