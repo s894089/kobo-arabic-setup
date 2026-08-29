@@ -119,7 +119,13 @@ if [ "$RESTORE" = 1 ]; then
   printf '  Restore this backup? [y/N] '
   read -r a
   case "$a" in y|Y|yes|YES|Yes) ;; *) die "Cancelled — nothing was changed." ;; esac
-  rsync -a --delete "$LAST/.adds/" "$DEVICE/.adds/"
+  if [ -d "$LAST/.adds" ]; then
+    rsync -a --delete "$LAST/.adds/" "$DEVICE/.adds/"
+  else
+    # the backup holds no .adds/, so this device had none before the install
+    warn "This device had no .adds/ before installing — removing what was added."
+    rm -rf "$DEVICE/.adds/koreader"
+  fi
   [ -d "$LAST/.kobo/dict" ] && rsync -a --delete "$LAST/.kobo/dict/" "$DEVICE/.kobo/dict/"
   ok "Restored .adds/ and .kobo/dict/ from $(basename "${LAST%/}")"
   warn "Fonts added to fonts/ are left in place — delete them by hand if you want them gone."
