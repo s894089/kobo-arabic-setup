@@ -380,7 +380,6 @@ tbody tr:hover td{background:var(--surface-2)}
       <li><span class="d">.adds/nm/menu</span> <span class="c ar">بنود قائمة NickelMenu</span><span class="c en">the NickelMenu entries</span></li>
       <li><span class="d">fonts/</span> <span class="c ar">الخطوط لقارئ كوبو الأصلي</span><span class="c en">fonts for Kobo's own reader</span></li>
     </ul>
-    <li><span class="n">install-library.sh</span> <span class="c ar">ينسخ الكتب إلى الجهاز</span><span class="c en">copies the books onto a device</span></li>
     <li><span class="d">library/</span> <span class="c ar">فارغ — ضع كتبك هنا</span><span class="c en">empty — put your books here</span></li>
     <li><span class="d">tools/</span> <span class="c ar">أداة إعادة الترتيب — شخصية</span><span class="c en">the reorganiser — personal</span></li>
     <li><span class="d">backups/</span> <span class="c ar">يُنشأ عند التشغيل، ولا يُرفَع للمستودع</span><span class="c en">created at runtime, never committed</span></li>
@@ -391,22 +390,15 @@ tbody tr:hover td{background:var(--surface-2)}
   <div class="tw"><table>
     <thead><tr><th>الأمر · Command</th><th>ما يفعله · What it does</th></tr></thead>
     <tbody>
-      <tr><td class="mono">cd /opt/kobo/koreader &amp;&amp; ./install.sh --dry-run</td>
+      <tr><td class="mono">./install.sh --dry-run</td>
         <td><span class="ar">يعرض كل تغيير دون كتابة شيء، ثم يلخّص: كم ملفًا جديدًا ومحدَّثًا ومحذوفًا. <strong>شغّله أولًا دائمًا.</strong></span>
             <span class="en">Lists every change without writing anything, then summarises: how many files are new, updated, deleted. <strong>Always run this first.</strong></span></td></tr>
-      <tr><td class="mono">cd /opt/kobo/koreader &amp;&amp; ./install.sh</td>
+      <tr><td class="mono">./install.sh</td>
         <td><span class="ar">يأخذ نسخة احتياطية، يعرض تحذيرًا، ينتظر أن تكتب <code>INSTALL</code>، ثم يثبّت مع شريط تقدّم.</span>
             <span class="en">Takes a backup, shows a warning, waits for you to type <code>INSTALL</code>, then installs with a progress display.</span></td></tr>
-      <tr><td class="mono">cd /opt/kobo/koreader &amp;&amp; ./install.sh --restore</td>
+      <tr><td class="mono">./install.sh --restore</td>
         <td><span class="ar">يعيد أحدث نسخة احتياطية — القارئ والإضافات والقواميس والإعدادات كما كانت.</span>
             <span class="en">Puts the newest backup back — reader, plugins, dictionaries and settings as they were.</span></td></tr>
-      <tr><td class="mono">cd /opt/kobo/koreader &amp;&amp; ./install-library.sh --dry-run</td>
-        <td><span class="ar">يعرض الكتب التي ستُنسخ دون نسخ شيء.</span><span class="en">Lists the books that would be copied, copying nothing.</span></td></tr>
-      <tr><td class="mono">cd /opt/kobo/koreader &amp;&amp; ./install-library.sh</td>
-        <td><span class="ar">ينسخ ما وضعته في <code>library/</code> إلى الجهاز. <strong>يضيف فقط</strong> — لا يحذف شيئًا موجودًا، ولا يلمس مجلدات <code>.sdr</code>.</span>
-            <span class="en">Copies whatever you put in <code>library/</code> onto the device. <strong>Adds only</strong> — deletes nothing already there, and never touches <code>.sdr</code> folders.</span></td></tr>
-      <tr><td class="mono">… ./install-library.sh --folder "روايات"</td>
-        <td><span class="ar">مجلد واحد فقط، إن أردت جزءًا من المكتبة.</span><span class="en">A single folder, if you only want part of the collection.</span></td></tr>
       <tr><td class="mono">… KOBO_MOUNT=/mnt/e ./install.sh</td>
         <td><span class="ar">إن ظهر جهازك باسم آخر.</span><span class="en">If your device mounts under a different name.</span></td></tr>
     </tbody>
@@ -433,8 +425,8 @@ tbody tr:hover td{background:var(--surface-2)}
   <h2 class="en">The book collection</h2>
   <p class="ar">مجلد <code>library/</code> يأتي <strong>فارغًا</strong>. استنساخ المستودع لا يضيف ولا يحذف ولا يغيّر أي كتاب على جهازك — وهذا مقصود، فمن يستنسخه لا يريد أن تُمسّ مكتبته.</p>
   <p class="en">The <code>library/</code> folder arrives <strong>empty</strong>. Cloning adds, removes and changes nothing on your device — deliberately, because whoever clones it does not want their own library disturbed.</p>
-  <p class="ar">لاستعماله: ضع مجلدات كتبك بداخله، مجلدًا لكل موضوع، ثم شغّل <code>install-library.sh</code>. وإن كان فارغًا فالسكربت يخبرك ويخرج دون أن يلمس الجهاز.</p>
-  <p class="en">To use it: drop your book folders inside, one per subject, then run <code>install-library.sh</code>. If it's empty the script tells you and exits without touching the device.</p>
+  <p class="ar">لاستعماله: ضع مجلدات كتبك بداخله، مجلدًا لكل موضوع، ثم شغّل <code>install.sh</code>. وإن كان فارغًا فالسكربت يخبرك ويخرج دون أن يلمس الجهاز.</p>
+  <p class="en">To use it: drop your book folders inside, one per subject, then run <code>install.sh</code>. If it's empty the script tells you and exits without touching the device.</p>
   <pre><code>library/
   History/
     Some Book - Author.epub
@@ -466,58 +458,41 @@ tbody tr:hover td{background:var(--surface-2)}
   <p class="lede en">One command. But run it in preview mode first, and read what it intends to do before you agree.</p>
 
   <div class="note tip">
-    <h4 class="ar">كل أمر هنا كامل بذاته</h4>
-    <h4 class="en">Every command here is complete on its own</h4>
-    <p class="ar">انسخه والصقه كما هو. لا يهمّ في أي مجلد أنت — كل أمر يبدأ بالانتقال إلى مكانه الصحيح.</p>
-    <p class="en">Copy it, paste it, run it. It does not matter which folder you are in — each command moves itself to the right place first.</p>
+    <h4 class="ar">ثلاث خطوات، ومن أي مجلد</h4>
+    <h4 class="en">Three steps, from any folder</h4>
+    <p class="ar">لا حاجة لمسار معيّن. استنسخ حيث تشاء، ادخل المجلد، شغّل الأمر.</p>
+    <p class="en">No particular path is needed. Clone wherever you like, enter the folder, run the command.</p>
   </div>
 
   <ol class="steps">
-    <li><h4 class="ar">التهيئة — مرّة واحدة فقط</h4><h4 class="en">Set up — once only</h4>
-      <p class="ar">يجهّز المجلد <code>/opt/kobo/koreader</code> ويستنسخ المشروع بداخله مباشرة. يطلب كلمة مرورك مرّة واحدة، ولن يطلبها بعد ذلك أبدًا.</p>
-      <p class="en">Prepares <code>/opt/kobo/koreader</code> and clones the project straight into it. Asks for your password once, and never again.</p>
-      <pre><code>sudo mkdir -p /opt/kobo
-sudo chown "$(id -u):$(id -g)" /opt/kobo
-git clone https://github.com/s894089/kobo-arabic-setup.git /opt/kobo/koreader</code></pre></li>
-
-    <li><h4 class="ar">وصّل جهاز Kobo</h4><h4 class="en">Connect the Kobo</h4>
-      <p class="ar">وصّل الكابل، افتح قفل الجهاز، واضغط <strong>Connect</strong> على شاشته. سيظهر قرص باسم <code>KOBOeReader</code>.</p>
-      <p class="en">Plug in the cable, unlock the device, tap <strong>Connect</strong> on its screen. A volume named <code>KOBOeReader</code> appears.</p></li>
-
-    <li><h4 class="ar">عايِن — لا يكتب شيئًا</h4><h4 class="en">Preview — writes nothing</h4>
-      <p class="ar">يعرض كل ملف سيُضاف أو يُستبدل أو يُحذف، دون أن يغيّر حرفًا. شغّله دائمًا أولًا.</p>
-      <p class="en">Lists every file that would be added, replaced or deleted, changing nothing. Always run this first.</p>
-      <pre><code>cd /opt/kobo/koreader &amp;&amp; ./install.sh --dry-run</code></pre></li>
-
-    <li><h4 class="ar">ثبّت</h4><h4 class="en">Install</h4>
-      <p class="ar">يأخذ نسخة احتياطية أولًا، ثم يعرض تحذيرًا، ثم ينتظر أن تكتب <code>INSTALL</code>.</p>
-      <p class="en">Backs up first, shows a warning, then waits for you to type <code>INSTALL</code>.</p>
-      <pre><code>cd /opt/kobo/koreader &amp;&amp; ./install.sh</code></pre></li>
-
+    <li><h4 class="ar">وصّل جهاز Kobo</h4><h4 class="en">Plug in the Kobo</h4>
+      <p class="ar">افتح قفل الجهاز واضغط <strong>Connect</strong> على شاشته.</p>
+      <p class="en">Unlock it and tap <strong>Connect</strong> on its screen.</p></li>
+    <li><h4 class="ar">استنسخ وادخل المجلد</h4><h4 class="en">Clone and enter the folder</h4>
+      <pre><code>git clone https://github.com/s894089/kobo-arabic-setup.git
+cd kobo-arabic-setup</code></pre></li>
+    <li><h4 class="ar">شغّل</h4><h4 class="en">Run it</h4>
+      <pre><code>./install.sh</code></pre>
+      <p class="ar">يأخذ نسخة احتياطية أولًا، يعرض ما سيفعله، ثم ينتظر أن تكتب <code>INSTALL</code>. وإن لم يجد جهازًا فسيتوقّف دون أن يغيّر شيئًا. وللمعاينة: <code>./install.sh --dry-run</code></p>
+      <p class="en">It backs up first, shows what it will do, then waits for you to type <code>INSTALL</code>. If it finds no device it stops without changing anything. To preview: <code>./install.sh --dry-run</code></p></li>
     <li><h4 class="ar">أخرِج القرص وأعد التشغيل</h4><h4 class="en">Eject and reboot</h4>
-      <p class="ar">أخرِج القرص، ثم أعد تشغيل الجهاز من <em>NickelMenu ← Reboot</em>، ثم افتح <em>NickelMenu ← KOReader+</em>. أول تشغيل بطيء لأنه يبني ذاكرة الأغلفة — انتظره.</p>
-      <p class="en">Eject, restart from <em>NickelMenu → Reboot</em>, then open <em>NickelMenu → KOReader+</em>. The first launch is slow while it builds its cover cache — let it finish.</p></li>
+      <p class="ar"><em>NickelMenu ← Reboot</em>، ثم <em>NickelMenu ← KOReader+</em>. أول تشغيل بطيء لأنه يبني ذاكرة الأغلفة.</p>
+      <p class="en"><em>NickelMenu → Reboot</em>, then <em>NickelMenu → KOReader+</em>. The first launch is slow while it builds its cover cache.</p></li>
   </ol>
 
   <h2 class="ar">إضافة الكتب</h2>
   <h2 class="en">Adding books</h2>
-  <p class="ar">مجلد <code>library/</code> يأتي فارغًا. ضع مجلدات كتبك بداخله، مجلدًا لكل موضوع:</p>
-  <p class="en">The <code>library/</code> folder arrives empty. Put your book folders inside it, one per subject:</p>
-  <pre><code>/opt/kobo/koreader/library/
-    History/
-        Some Book - Author.epub
-    Novels/
-        Another Book - Author.epub</code></pre>
-  <p class="ar">ثم عايِن، ثم انسخ:</p>
-  <p class="en">Then preview, then copy:</p>
-  <pre><code>cd /opt/kobo/koreader &amp;&amp; ./install-library.sh --dry-run</code></pre>
-  <pre><code>cd /opt/kobo/koreader &amp;&amp; ./install-library.sh</code></pre>
+  <p class="ar">مجلد <code>library/</code> يأتي فارغًا. ضع مجلدات كتبك بداخله، مجلدًا لكل موضوع، ثم شغّل <code>./install.sh</code> مرّة أخرى. النسخ <strong>يضيف فقط</strong> ولا يلمس مجلدات <code>.sdr</code>.</p>
+  <p class="en">The <code>library/</code> folder arrives empty. Put your book folders inside, one per subject, then run <code>./install.sh</code> again. Copying only <strong>adds</strong>, and never touches <code>.sdr</code> folders.</p>
+  <pre><code>kobo-arabic-setup/library/
+    تاريخ/
+        اسم الكتاب - المؤلف.epub</code></pre>
 
   <h2 class="ar">التراجع — ماذا يفعل <code>--restore</code> بالضبط؟</h2>
   <h2 class="en">Undoing — what <code>--restore</code> actually does</h2>
   <p class="ar">كل تشغيل ناجح يترك نسخة مؤرَّخة في <code>backups/</code>. الأمر <code>--restore</code> يأخذ <strong>أحدث</strong> نسخة ويعيدها فوق الجهاز:</p>
   <p class="en">Every successful run leaves a timestamped copy in <code>backups/</code>. <code>--restore</code> takes the <strong>most recent</strong> one and puts it back over the device:</p>
-  <pre><code>cd /opt/kobo/koreader &amp;&amp; ./install.sh --restore
+  <pre><code>./install.sh --restore
 # asks you to type RESTORE, then:
 #   backups/&lt;newest&gt;/.adds/      → device .adds/      (mirror, with deletion)
 #   backups/&lt;newest&gt;/.kobo/dict/ → device .kobo/dict/  (mirror, with deletion)</code></pre>
@@ -548,7 +523,7 @@ git clone https://github.com/s894089/kobo-arabic-setup.git /opt/kobo/koreader</c
     <tbody>
       <tr><td class="mono">No Kobo at /Volumes/KOBOeReader</td>
         <td><span class="ar">الجهاز غير موصول، أو لم تضغط <em>Connect</em> على شاشته، أو ركّبه النظام باسم آخر. جرّب: <code>KOBO_MOUNT=/Volumes/اسمك ./install.sh</code></span>
-            <span class="en">Not plugged in, or you didn't tap <em>Connect</em> on the device, or it mounted under a different name. Try <code>cd /opt/kobo/koreader &amp;&amp; KOBO_MOUNT=/mnt/e ./install.sh</code></span></td></tr>
+            <span class="en">Not plugged in, or you didn't tap <em>Connect</em> on the device, or it mounted under a different name. Try <code>KOBO_MOUNT=/mnt/e ./install.sh</code></span></td></tr>
       <tr><td class="mono">is mounted but is not a Kobo</td>
         <td><span class="ar">حماية مقصودة: لم يجد السكربت ملف <code>.kobo/version</code> فرفض الكتابة على قرص قد لا يكون جهازك.</span>
             <span class="en">A deliberate guard: the script found no <code>.kobo/version</code> and refused to write to a volume that might not be your device.</span></td></tr>
