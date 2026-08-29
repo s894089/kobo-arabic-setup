@@ -87,46 +87,96 @@ In Git Bash the Kobo is `/e` for drive `E:`, also found automatically.
 **If your device is not found**, point at it directly:
 
 ```bash
-KOBO_MOUNT=/mnt/e ./install.sh
+cd /opt/kobo/koreader && KOBO_MOUNT=/mnt/e ./install.sh
 ```
 
 ## Install
 
-```bash
-git clone <repository-url> kobo-arabic-setup
-cd kobo-arabic-setup
+**Every command below is complete on its own** — copy, paste, run. It does not
+matter which folder you are in.
 
-./bootstrap.sh           # optional: move to /opt/kobo/koreader, asks for your password once
-./install.sh --dry-run   # see exactly what would change, write nothing
-./install.sh             # do it — backs up first, asks you to type INSTALL
-```
+### 1 — Set up (once)
 
-Then: eject the Kobo → reboot it → *NickelMenu → KOReader+*
-
-### Adding books
-
-The `library/` folder ships **empty**, so cloning never touches your books.
-Drop your own book folders into it — one folder per subject — then:
+Prepares `/opt/kobo/koreader` and clones the project straight into it. Asks for
+your password once, and never again.
 
 ```bash
-./install-library.sh --dry-run
-./install-library.sh
+sudo mkdir -p /opt/kobo
+sudo chown "$(id -u):$(id -g)" /opt/kobo
+git clone https://github.com/s894089/kobo-arabic-setup.git /opt/kobo/koreader
 ```
 
-It only adds. Nothing already on the device is deleted, and `.sdr` folders
+### 2 — Connect the Kobo
+
+Plug in the cable, unlock the device, tap **Connect** on its screen.
+
+### 3 — Preview (writes nothing)
+
+```bash
+cd /opt/kobo/koreader && ./install.sh --dry-run
+```
+
+### 4 — Install
+
+Backs up first, shows a warning, waits for you to type `INSTALL`.
+
+```bash
+cd /opt/kobo/koreader && ./install.sh
+```
+
+### 5 — Eject and reboot
+
+Eject the Kobo, restart it from **NickelMenu → Reboot**, then open
+**NickelMenu → KOReader+**. The first launch is slow while it rebuilds its
+cover cache — that is expected.
+
+---
+
+## Adding books
+
+`library/` ships **empty**, so cloning never touches your books. Put your book
+folders inside it, one per subject:
+
+```
+/opt/kobo/koreader/library/
+    History/
+        Some Book - Author.epub
+    Novels/
+        Another Book - Author.epub
+```
+
+Preview, then copy:
+
+```bash
+cd /opt/kobo/koreader && ./install-library.sh --dry-run
+```
+
+```bash
+cd /opt/kobo/koreader && ./install-library.sh
+```
+
+It only **adds**. Nothing already on the device is deleted, and `.sdr` folders
 (your highlights, notes and reading positions) are never touched. If the folder
-is empty the installer says so and exits without touching anything.
+is empty it says so and exits without touching the device.
 
-First launch is slow while it rebuilds its cover cache. That is normal.
+---
 
-### Undo
+## Undo
+
+Every run backs up to `backups/<timestamp>/` **before** writing anything. This
+restores the newest one:
 
 ```bash
-./install.sh --restore
+cd /opt/kobo/koreader && ./install.sh --restore
 ```
 
-Every run backs up the device's `.adds/` and `.kobo/dict/` to `backups/<timestamp>/`
-**before** writing anything. `--restore` puts the most recent one back.
+### If your device is not found
+
+```bash
+cd /opt/kobo/koreader && KOBO_MOUNT=/mnt/e ./install.sh
+```
+
+Replace `/mnt/e` with your device's path.
 
 ---
 

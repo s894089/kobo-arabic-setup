@@ -14,20 +14,19 @@ trap 'rc=$?; [ $rc -ne 0 ] && printf "\n\033[31m✗ Aborted at line $LINENO (exi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAYLOAD="$ROOT/payload"
 BACKUPS="$ROOT/backups"
-# ─── find the Kobo, on any platform ───────────────────────────────────────────
-# macOS      /Volumes/KOBOeReader
-# Linux      /media/$USER/KOBOeReader, /run/media/$USER/KOBOeReader, /mnt/...
-# WSL        /mnt/d, /mnt/e ...        (Windows drive letters)
-# Git Bash   /d, /e ...
-# Override any of this with:  KOBO_MOUNT=/path/to/kobo
+# Find the Kobo on any platform.
+#   macOS     /Volumes/KOBOeReader
+#   Linux     /media/$USER/KOBOeReader, /run/media/$USER/KOBOeReader
+#   Windows   WSL: /mnt/d, /mnt/e …   Git Bash: /d, /e …
+# Override with:  KOBO_MOUNT=/path/to/kobo
 detect_kobo() {
   local c
   for c in "/Volumes/KOBOeReader" \
-           "/media/$USER/KOBOeReader" "/run/media/$USER/KOBOeReader" \
+           "/media/${USER:-}/KOBOeReader" "/run/media/${USER:-}/KOBOeReader" \
            "/media/KOBOeReader" "/mnt/KOBOeReader"; do
     [ -f "$c/.kobo/version" ] && { printf '%s' "$c"; return 0; }
   done
-  for c in /mnt/? /?; do            # WSL and Git Bash drive letters
+  for c in /mnt/? /?; do
     [ -f "$c/.kobo/version" ] && { printf '%s' "$c"; return 0; }
   done
   return 1
@@ -97,9 +96,8 @@ step() { printf '\n%s▸ %s%s\n' $'\033[1m' "$*" "$c_off"; }
 step "Checking prerequisites"
 command -v rsync >/dev/null || die "rsync not found. Install it and retry."
 [ -d "$PAYLOAD" ] || die "payload/ missing next to this script. Is the repo complete?"
-[ -d "$DEVICE" ]  || die "No Kobo at $DEVICE. Plug it in, unlock it, and tap Connect.
-   Looked in /Volumes, /media, /run/media, /mnt and drive letters.
-   If it is somewhere else:  KOBO_MOUNT=/path/to/kobo ./install.sh"
+[ -d "$DEVICE" ]  || die "No Kobo found. Plug it in, unlock it, and tap Connect on its screen.\n   Looked in /Volumes, /media, /run/media, /mnt and drive letters.\n   If it is elsewhere:  KOBO_MOUNT=/path/to/kobo ./install.sh
+   (If it mounts elsewhere: KOBO_MOUNT=/Volumes/YOURNAME ./install.sh)"
 [ -f "$DEVICE/.kobo/version" ] || die "$DEVICE is mounted but is not a Kobo — refusing to touch it."
 
 FW="$(cut -d, -f3 "$DEVICE/.kobo/version" 2>/dev/null || echo unknown)"
@@ -171,7 +169,13 @@ confirm "This will modify your Kobo." "INSTALL"
 # ─── 1. backup ────────────────────────────────────────────────────────────────
 step "Backing up device configuration"
 mkdir -p "$BACKUPS/$STAMP"
-rsync -a "$DEVICE/.adds/"     "$BACKUPS/$STAMP/.adds/"
+if [ -d "$DEVICE/.adds" ]; then
+  rsync -a "${RSYNC_PROGRESS[@]}" "$DEVICE/.adds/" "$BACKUPS/$STAMP/.adds/" 2>&1 \
+    | while IFS= read -r l; do case "$l" in *%*) printf '\r  %s' "$(printf '%s' "$l" | tr -s ' ' | cut -c1-70)";; esac; done
+  printf '\r  %-72s\n' "backup complete."
+else
+  say "  nothing to back up — this device has no .adds/ yet (a fresh Kobo)"
+fi
 rsync -a "$DEVICE/.kobo/dict/" "$BACKUPS/$STAMP/.kobo/dict/" 2>/dev/null || true
 cp "$DEVICE/.kobo/version" "$BACKUPS/$STAMP/kobo-version.txt" 2>/dev/null || true
 ok "Backup: $BACKUPS/$STAMP ($(safe_size "$BACKUPS/$STAMP"))"
@@ -197,6 +201,32 @@ rsync -a "$PAYLOAD/.adds/nm/menu" "$DEVICE/.adds/nm/menu"
 rsync -a "$PAYLOAD/fonts/"        "$DEVICE/fonts/"
 rsync -a --delete "$PAYLOAD/.kobo/dict/" "$DEVICE/.kobo/dict/"
 ok "Fonts and dictionaries in place"
+
+# ─── books (only if library/ has any) ─────────────────────────────────────────
+BOOKS="${KOBO_LIBRARY:-$ROOT/library}"
+NBOOKS=0
+if [ -d "$BOOKS" ]; then
+  NBOOKS=$(find "$BOOKS" -type f \
+             ! -name 'README.md' ! -name '.gitkeep' ! -name '._*' ! -name '.DS_Store' \
+             2>/dev/null | wc -l | tr -d ' ' || echo 0)
+fi
+
+if [ "$NBOOKS" -gt 0 ]; then
+  step "Copying books"
+  say "  $NBOOKS book(s), $(safe_size "$BOOKS")"
+  rsync -a "${RSYNC_PROGRESS[@]}" \
+    --exclude '*.sdr/' --exclude '._*' --exclude '.DS_Store' \
+    --exclude 'README.md' --exclude '.gitkeep' --exclude '.git/' \
+    "$BOOKS/" "$DEVICE/" 2>&1 \
+    | while IFS= read -r line; do
+        case "$line" in *%*) printf '\r  %s' "$(printf '%s' "$line" | tr -s ' ' | cut -c1-70)";; esac
+      done
+  printf '\r  %-72s\n' "books copied."
+else
+  step "Books"
+  say "  library/ is empty — no books copied. Your device's books are untouched."
+  say "  ${c_dim}To add books: put folders into $BOOKS and run this again.${c_off}"
+fi
 
 step "Clearing macOS sidecar files"
 command -v dot_clean >/dev/null && dot_clean -m "$DEVICE" 2>/dev/null || true

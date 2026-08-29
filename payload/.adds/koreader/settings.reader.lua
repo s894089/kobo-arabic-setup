@@ -39,7 +39,6 @@ return {
         [8] = "Noto Sans",
         [9] = "Noto Sans Arabic UI",
         [10] = "Noto Sans Bengali UI",
-        [11] = "Noto Sans CJK SC",
         [12] = "Noto Sans Devanagari UI",
         [13] = "Noto Serif",
     },

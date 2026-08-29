@@ -1,12 +1,9 @@
 # Device backups — created at runtime, never publish
 backups/
 
-# The book collection ships EMPTY. Books are gigabytes and single files can
-# exceed GitHub's 100 MB per-file limit, so they travel separately.
-# Track the folder and its docs, ignore everything you drop into it.
-library/*
-!library/.gitkeep
-!library/README.md
+# The book collection — 2.7 GB, and three files exceed GitHub's 100 MB
+# per-file hard limit. Share it on a disk or cloud drive, not through git.
+library/
 
 # Personal library reorganisation — specific to one person's books
 tools/library-plan.json

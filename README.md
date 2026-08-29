@@ -1,210 +1,164 @@
-# إعداد كوبو للقراءة العربية
+# Kobo Arabic Reading Setup
 
-<div dir="rtl">
+A one-command setup for reading Arabic on a Kobo: KOReader with Arabic
+typefaces, Arabic↔English dictionaries, and a curated set of plugins.
 
-إعداد جاهز لقراءة العربية على أجهزة **Kobo**: قارئ **KOReader** مع خطوط نسخ
-عربية، وقاموسَي عربي‑إنجليزي وإنجليزي‑عربي، ومجموعة إضافات مختارة — بأمر واحد.
-
-**كتبك ومواضع قراءتك وتظليلاتك وإحصاءاتك لا تُمَسّ.**
-
-📖 **[الدليل الكامل — عربي وإنجليزي](docs/guide.html)** — ما هو Kobo وNickelMenu
-وKOReader، والتهيئة على كل نظام، وما الذي يتغيّر بالضبط، وكيف ترتّب مكتبتك.
-افتحه في المتصفّح بعد الاستنساخ.
-
-</div>
+**Your books, reading positions, highlights and statistics are never touched.**
 
 ---
 
-## ما الذي يُثبَّت
-
-<div dir="rtl">
+## What it installs
 
 | | |
 |---|---|
-| **KOReader** | الإصدار v2026.07.1 — أقوى بكثير من قارئ Kobo، خصوصًا مع ملفات PDF |
-| **Amiri** | خط نسخ كلاسيكي، ومعه **AmiriQuran** المضبوط للتشكيل الكامل |
-| **عربي ← إنجليزي** | ‏٢٦٬٥٧٨ كلمة، مع فهرس تصريفات (فتُعرَف «والكتاب» على أنها «كتاب») |
-| **إنجليزي ← عربي** | ‏٨٧٬٤٢٣ كلمة |
-| **Project: Title** | واجهة مكتبة أوضح وأسرع تصفّحًا |
-| **App Store** | تصفّح إضافات KOReader وثبّتها وحدّثها من الجهاز نفسه |
-| **LocalSend** | نقل ملفات لاسلكي، بلا كابل ولا خادم |
+| **KOReader** | v2026.07.1 — a far better reader than Kobo's own, especially for PDFs |
+| **Amiri** | Classical naskh typeface, plus **AmiriQuran** for fully-vocalised text |
+| **Arabic→English** | 26,578 words, with inflection matching (so `والكتاب` resolves to `كتاب`) |
+| **English→Arabic** | 87,423 words |
+| **Project: Title** | v3.8.3 — a much better library screen |
+| **App Store** | Browse and update KOReader plugins on the device itself |
+| **LocalSend** | Wireless file transfer, no cable and no server |
 
-ويُضبط كذلك: العربية لغةً لنصّ الكتاب — فيصحّ ضبط الأسطر وفصل المقاطع.
-أمّا **واجهة البرنامج فتبقى بالإنجليزية**؛ المتغيّر هو طريقة عرض النص لا القوائم.
+It also sets Arabic as the text language for correct justification and
+hyphenation, and trims Kobo's bundled dictionaries down to English only.
 
-</div>
+The interface stays in **English**. Only the *text rendering* language changes.
 
 ---
 
-## المتطلّبات
+## Prerequisites
 
-<div dir="rtl">
-
-1. **جهاز Kobo عليه [NickelMenu](https://pgaskin.net/NickelMenu/) مسبقًا.**
-   هذه الحزمة تُثبّت KOReader ولا تُثبّت NickelMenu. وبما أن NickelMenu هو
-   الطريق الوحيد لتشغيل KOReader، فبدونه ستكون ثبّتّ قارئًا لا تستطيع فتحه.
-2. **صدفة فيها `rsync` و`git` و`python3`** — انظر نظامك أدناه.
-3. **‏٢٠٠ ميغابايت فارغة** على الجهاز.
-4. الجهاز **موصول ومفتوح القفل، وضغطت فيه Connect**.
+1. **A Kobo already running [NickelMenu](https://pgaskin.net/NickelMenu/).**
+   This setup installs KOReader; it does not install NickelMenu. Since
+   NickelMenu is the only way to launch KOReader, without it you would have
+   installed a reader you cannot open.
+2. **A shell with `rsync`, `git` and `python3`.** See your platform below.
+3. **~200 MB free** on the device.
+4. The Kobo **plugged in, unlocked, and set to Connect**.
 
 ### macOS
 
-كل شيء موجود أصلًا — `rsync` و`git` و`python3` تأتي مع النظام (قد يُطلب منك
-تثبيت Xcode command line tools أول مرة).
+Everything is already there. `rsync`, `git` and `python3` ship with the system
+(you may be prompted to install Xcode command line tools the first time).
 
-يظهر الجهاز في `/Volumes/KOBOeReader` ويُكتشَف تلقائيًا.
+The Kobo appears at `/Volumes/KOBOeReader` and is found automatically.
 
 ### Linux
 
-</div>
+Install the tools if you don't have them:
 
 ```bash
-sudo apt install git rsync python3          # Debian / Ubuntu
+sudo apt install git rsync python3          # Debian, Ubuntu
 sudo dnf install git rsync python3          # Fedora
 ```
 
-<div dir="rtl">
-
-يظهر الجهاز عادةً في `/media/$USER/KOBOeReader` أو `/run/media/$USER/KOBOeReader`،
-وكلاهما يُكتشَف تلقائيًا.
+The Kobo usually mounts at `/media/$USER/KOBOeReader` or
+`/run/media/$USER/KOBOeReader`; both are found automatically.
 
 ### Windows
 
-السكربتات مكتوبة بـ bash، فتحتاج إحدى طريقتين:
+The scripts are bash, so you need one of these:
 
-**الأولى — WSL (المستحسنة).** في PowerShell كمسؤول:
-
-</div>
+**Option A — WSL (recommended).** In PowerShell as administrator:
 
 ```powershell
 wsl --install
 ```
 
-<div dir="rtl">
-
-أعد التشغيل، افتح **Ubuntu** من قائمة ابدأ، ثم:
-
-</div>
+Reboot, open **Ubuntu** from the Start menu, then:
 
 ```bash
 sudo apt update && sudo apt install git rsync python3
 ```
 
-<div dir="rtl">
+Your Kobo appears in WSL as a drive letter under `/mnt`. If it is drive `E:`
+it will be `/mnt/e`, and the scripts find it automatically.
 
-يظهر الجهاز في WSL كحرف قرص تحت `/mnt` — فإن كان القرص `E:` صار `/mnt/e`،
-وتجده السكربتات تلقائيًا.
+**Option B — Git Bash.** Install [Git for Windows](https://git-scm.com/download/win),
+which gives you a bash shell. Note that Git Bash does **not** include `rsync`,
+so you would have to add it separately — WSL is the easier path.
 
-**الثانية — Git Bash.** يعطيك صدفة bash، لكنه **لا يتضمّن `rsync`** وهو أساس
-هذه السكربتات، فتضطر لإضافته يدويًا. لذا WSL أبسط بكثير.
+In Git Bash the Kobo is `/e` for drive `E:`, also found automatically.
 
-وإن لم يُعثر على جهازك، أشِر إليه مباشرة:
-
-</div>
+**If your device is not found**, point at it directly:
 
 ```bash
 KOBO_MOUNT=/mnt/e ./install.sh
 ```
 
----
-
-## التثبيت
+## Install
 
 ```bash
-git clone https://github.com/s894089/kobo-arabic-setup.git
+git clone <repository-url> kobo-arabic-setup
 cd kobo-arabic-setup
 
-./bootstrap.sh           # اختياري: ينقله إلى /opt/kobo/koreader، يطلب كلمة مرورك مرّة واحدة
-./install.sh --dry-run   # يعرض كل تغيير دون أن يكتب شيئًا
-./install.sh             # التنفيذ — يأخذ نسخة احتياطية أولًا، ثم يطلب منك كتابة INSTALL
+./bootstrap.sh           # optional: move to /opt/kobo/koreader, asks for your password once
+./install.sh --dry-run   # see exactly what would change, write nothing
+./install.sh             # do it — backs up first, asks you to type INSTALL
 ```
 
-<div dir="rtl">
+Then: eject the Kobo → reboot it → *NickelMenu → KOReader+*
 
-ثم: أخرِج القرص ← أعد تشغيل الجهاز ← **NickelMenu ← KOReader+**
+### Adding books
 
-أول تشغيل بطيء لأنه يعيد بناء ذاكرة الأغلفة. هذا طبيعي.
-
-### إضافة الكتب
-
-مجلد `library/` يأتي **فارغًا**، فالاستنساخ لا يمسّ كتبك أبدًا. ضع مجلدات كتبك
-بداخله — مجلدًا لكل موضوع — ثم:
-
-</div>
+The `library/` folder ships **empty**, so cloning never touches your books.
+Drop your own book folders into it — one folder per subject — then:
 
 ```bash
 ./install-library.sh --dry-run
 ./install-library.sh
 ```
 
-<div dir="rtl">
+It only adds. Nothing already on the device is deleted, and `.sdr` folders
+(your highlights, notes and reading positions) are never touched. If the folder
+is empty the installer says so and exits without touching anything.
 
-هذا السكربت **يضيف فقط**: لا يحذف شيئًا موجودًا على الجهاز، ولا يلمس مجلدات
-`.sdr` التي تحمل تظليلاتك وملاحظاتك ومواضع قراءتك. وإن كان المجلد فارغًا فإنه
-يخبرك ويخرج دون أن يلمس الجهاز.
+First launch is slow while it rebuilds its cover cache. That is normal.
 
-### التراجع
-
-</div>
+### Undo
 
 ```bash
 ./install.sh --restore
 ```
 
-<div dir="rtl">
-
-كل تشغيل يأخذ نسخة احتياطية من `.adds/` و`.kobo/dict/` إلى `backups/<التاريخ>/`
-**قبل** أن يكتب أي شيء. و`--restore` يعيد أحدث نسخة.
-
-</div>
+Every run backs up the device's `.adds/` and `.kobo/dict/` to `backups/<timestamp>/`
+**before** writing anything. `--restore` puts the most recent one back.
 
 ---
 
-## ما يُستبدل وما يبقى
+## What is kept, what is replaced
 
-<div dir="rtl">
+**Replaced** — `.adds/koreader/`, `.adds/nm/menu`, `.kobo/dict/`, `fonts/`
 
-**يُستبدل** — `.adds/koreader/` و`.adds/nm/menu` و`.kobo/dict/` و`fonts/`
+**Kept, always** — your books · every `.sdr` folder (reading positions and
+highlights) · `statistics.sqlite3` · `history.lua` · vocabulary builder ·
+KoInsight server settings
 
-**يبقى دائمًا** — كتبك · كل مجلدات `.sdr` (مواضع القراءة والتظليلات) ·
-`statistics.sqlite3` · `history.lua` · مفردات vocabulary builder · إعدادات KoInsight
-
-يستعمل المثبّت `rsync --delete` حتى تُزال فعلًا الإضافات التي أسقطتها هذه الحزمة
-بدل أن تبقى معلّقة — لكن كل ملف شخصي مذكور أعلاه مستثنى من النسخ ومن الحذف معًا.
-
-</div>
+The installer uses `rsync --delete` so that plugins this setup drops are
+genuinely removed rather than left behind — but every personal file above is
+excluded from both the copy and the delete.
 
 ---
 
-## ملاحظة مهمّة على مجلدات `.sdr`
+## A note on `.sdr` folders
 
-<div dir="rtl">
-
-يحفظ KOReader موضع قراءتك وتظليلاتك وإعدادات كل كتاب في مجلد `.sdr` **بجانب
-الكتاب، والربط بينهما بالاسم**. فإن غيّرت اسم كتاب أو نقلته، غيّر اسم مجلده
-بالطريقة نفسها في الوقت نفسه، وإلا فقدت تظليلاته.
-
-هذا المثبّت لا يلمس هذه المجلدات إطلاقًا.
-
-</div>
+KOReader stores each book's reading position, highlights and per-book layout in
+a `.sdr` folder **next to the book, matched by filename**. If you rename or move
+a book, rename its `.sdr` folder identically or you will lose your highlights.
+This installer never touches them.
 
 ---
 
-## المصادر والرخص
+## Credits and licences
 
 - [KOReader](https://github.com/koreader/koreader) — AGPL-3.0
-- [Project: Title](https://github.com/joshuacant/ProjectTitle) — ثبّت الإصدار الذي يذكر رقم KOReader لديك
-- [App Store](https://github.com/omer-faruq/appstore.koplugin) — omer-faruq
-- [LocalSend for KOReader](https://github.com/kaikozlov/localsend.koplugin) — kaikozlov
-- [Amiri](https://github.com/aliftype/amiri) — خالد حسني، رخصة SIL OFL 1.1
-- قاموس عربي‑إنجليزي — [wiktionary_stardict](https://github.com/xxyzz/wiktionary_stardict)، بيانات Wiktionary، رخصة CC BY-SA 4.0
-- قاموس إنجليزي‑عربي — محوّل عن بيانات [Arabeyes](https://www.arabeyes.org/)
+- [Project: Title](https://github.com/joshuacant/ProjectTitle) by joshuacant
+- [App Store](https://github.com/omer-faruq/appstore.koplugin) by omer-faruq
+- [LocalSend for KOReader](https://github.com/kaikozlov/localsend.koplugin) by kaikozlov
+- [Amiri](https://github.com/aliftype/amiri) by Khaled Hosny — SIL OFL 1.1
+- [Project: Title](https://github.com/joshuacant/ProjectTitle) — pin the release that names your KOReader version
+- Arabic→English dictionary — [wiktionary_stardict](https://github.com/xxyzz/wiktionary_stardict), Wiktionary data, CC BY-SA 4.0
+- English→Arabic dictionary — converted from [Arabeyes](https://www.arabeyes.org/) data
 
-<div dir="rtl">
-
-سكربتات هذا المستودع تحت رخصة MIT. أمّا البرمجيات المضمّنة فتبقى تحت رخصها،
-وهي مرفقة بجانب كلٍّ منها.
-
-النسخة الإنجليزية من هذا الملف: **[README.en.md](README.en.md)**
-
-</div>
+The scripts in this repository are MIT. Bundled third-party software keeps its
+own licence, included alongside it.
