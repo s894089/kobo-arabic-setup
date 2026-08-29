@@ -394,8 +394,8 @@ tbody tr:hover td{background:var(--surface-2)}
         <td><span class="ar">يعرض كل تغيير دون كتابة شيء، ثم يلخّص: كم ملفًا جديدًا ومحدَّثًا ومحذوفًا. <strong>شغّله أولًا دائمًا.</strong></span>
             <span class="en">Lists every change without writing anything, then summarises: how many files are new, updated, deleted. <strong>Always run this first.</strong></span></td></tr>
       <tr><td class="mono">./install.sh</td>
-        <td><span class="ar">يأخذ نسخة احتياطية، يعرض تحذيرًا، ينتظر أن تكتب <code>INSTALL</code>، ثم يثبّت مع شريط تقدّم.</span>
-            <span class="en">Takes a backup, shows a warning, waits for you to type <code>INSTALL</code>, then installs with a progress display.</span></td></tr>
+        <td><span class="ar">يأخذ نسخة احتياطية، يعرض تحذيرًا، يسألك <code>y</code> للمتابعة، ثم يثبّت مع شريط تقدّم.</span>
+            <span class="en">Takes a backup, shows a warning, asks you for <code>y</code> to continue, then installs with a progress display.</span></td></tr>
       <tr><td class="mono">./install.sh --restore</td>
         <td><span class="ar">يعيد أحدث نسخة احتياطية — القارئ والإضافات والقواميس والإعدادات كما كانت.</span>
             <span class="en">Puts the newest backup back — reader, plugins, dictionaries and settings as they were.</span></td></tr>
@@ -473,8 +473,8 @@ tbody tr:hover td{background:var(--surface-2)}
 cd kobo-arabic-setup</code></pre></li>
     <li><h4 class="ar">شغّل</h4><h4 class="en">Run it</h4>
       <pre><code>./install.sh</code></pre>
-      <p class="ar">يأخذ نسخة احتياطية أولًا، يعرض ما سيفعله، ثم ينتظر أن تكتب <code>INSTALL</code>. وإن لم يجد جهازًا فسيتوقّف دون أن يغيّر شيئًا. وللمعاينة: <code>./install.sh --dry-run</code></p>
-      <p class="en">It backs up first, shows what it will do, then waits for you to type <code>INSTALL</code>. If it finds no device it stops without changing anything. To preview: <code>./install.sh --dry-run</code></p></li>
+      <p class="ar">يأخذ نسخة احتياطية أولًا، يعرض ما سيفعله، ثم يسألك <code>y</code> للمتابعة. وإن لم يجد جهازًا فسيتوقّف دون أن يغيّر شيئًا. وللمعاينة: <code>./install.sh --dry-run</code></p>
+      <p class="en">It backs up first, shows what it will do, then asks you for <code>y</code> to continue. If it finds no device it stops without changing anything. To preview: <code>./install.sh --dry-run</code></p></li>
     <li><h4 class="ar">أخرِج القرص وأعد التشغيل</h4><h4 class="en">Eject and reboot</h4>
       <p class="ar"><em>NickelMenu ← Reboot</em>، ثم <em>NickelMenu ← KOReader+</em>. أول تشغيل بطيء لأنه يبني ذاكرة الأغلفة.</p>
       <p class="en"><em>NickelMenu → Reboot</em>, then <em>NickelMenu → KOReader+</em>. The first launch is slow while it builds its cover cache.</p></li>

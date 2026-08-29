@@ -109,8 +109,8 @@ cd kobo-arabic-setup
 ./install.sh
 ```
 
-That is all. It backs up first, shows what it will do, then waits for you to
-type `INSTALL`. If it cannot find a Kobo it stops without changing anything.
+That is all. It backs up first, shows what it will do, then asks you for `y`
+to continue. If it cannot find a Kobo it stops without changing anything.
 
 Then: eject → **NickelMenu → Reboot** → **NickelMenu → KOReader+**
 

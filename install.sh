@@ -73,12 +73,15 @@ copy_with_progress() {   # copy_with_progress <label> <src> <dst> [extra rsync a
   printf '\r  %-72s\n' "done."
 }
 
-confirm() {  # confirm <prompt> <required-word>
-  local prompt="$1" want="$2" got
+confirm() {  # confirm <prompt>
+  local prompt="$1" got
   printf '\n%s%s%s\n' "$c_warn" "$prompt" "$c_off"
-  printf '  Type %s to continue, or press Enter to cancel: ' "$want"
+  printf '  Continue? [y/N] '
   read -r got
-  [ "$got" = "$want" ] || die "Cancelled — nothing was changed."
+  case "$got" in
+    y|Y|yes|YES|Yes) ;;
+    *) die "Cancelled — nothing was changed." ;;
+  esac
 }
 
 ok()   { printf '%s✓%s %s\n' "$c_ok"  "$c_off" "$*"; }
@@ -113,7 +116,9 @@ if [ "$RESTORE" = 1 ]; then
   LAST="$(ls -1d "$BACKUPS"/*/ 2>/dev/null | tail -1 || true)"
   [ -n "$LAST" ] || die "No backups found in $BACKUPS"
   warn "About to restore $LAST over the device."
-  read -rp "Type RESTORE to confirm: " a; [ "$a" = "RESTORE" ] || die "Cancelled."
+  printf '  Restore this backup? [y/N] '
+  read -r a
+  case "$a" in y|Y|yes|YES|Yes) ;; *) die "Cancelled — nothing was changed." ;; esac
   rsync -a --delete "$LAST/.adds/" "$DEVICE/.adds/"
   [ -d "$LAST/.kobo/dict" ] && rsync -a --delete "$LAST/.kobo/dict/" "$DEVICE/.kobo/dict/"
   ok "Restored .adds/ and .kobo/dict/ from $(basename "${LAST%/}")"
@@ -163,7 +168,7 @@ cat <<WARN
     • Do not unplug the device until it says Done.
 
 WARN
-confirm "This will modify your Kobo." "INSTALL"
+confirm "This will modify your Kobo."
 
 # ─── 1. backup ────────────────────────────────────────────────────────────────
 step "Backing up device configuration"
