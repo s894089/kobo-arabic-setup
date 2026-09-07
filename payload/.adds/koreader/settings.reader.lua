@@ -24,6 +24,7 @@ return {
     ["clipboard"] = {},
     ["closed_rotation_mode"] = 0,
     ["collate"] = "strcoll",
+    ["collection_display_mode"] = "mosaic_image",
     ["color_rendering"] = true,
     ["coverbrowser_initial_default_setup_done"] = true,
     ["cre_font_family_fonts"] = {},
@@ -96,6 +97,7 @@ return {
             ["enabled"] = false,
         },
     },
+    ["filemanager_display_mode"] = "mosaic_image",
     ["filemanagermenu_tab_index"] = 1,
     ["folder_shortcuts"] = {},
     ["folder_shortcuts_settings"] = {},
@@ -159,6 +161,7 @@ return {
     ["highlight_dialog_position"] = "center",
     ["highlight_lighten_factor"] = 0.2,
     ["highlight_long_hold_threshold_s"] = 3,
+    ["history_display_mode"] = "mosaic_image",
     ["history_filter"] = "all",
     ["httpinspector"] = {
         ["port"] = 8080,

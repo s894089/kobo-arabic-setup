@@ -56,7 +56,7 @@ EXCLUDES=(
   --exclude 'settings/battery_stats.lua*' --exclude 'settings/koinsight.lua*'
   --exclude 'history.lua' --exclude 'clipboard/' --exclude 'cache/'
   --exclude 'screenshots/' --exclude 'crash.log' --exclude '._*'
-  --exclude 'ota/' --exclude '*.old' --exclude '*.oft'
+  --exclude 'ota/' --exclude '*.old' --exclude '*.oft' --exclude 'FSCK0000.*'
   --exclude 'fonts/noto/NotoSansCJKsc-Regular.otf'
 )
 
