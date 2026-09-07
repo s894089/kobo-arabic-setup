@@ -145,6 +145,24 @@ cat <<PLAN
                 reading statistics, history, vocabulary, KoInsight settings
 PLAN
 
+# ─── books (only if library/ has any) ─────────────────────────────────────────
+# Prefer the library beside the repo, then the repo's own (empty by
+# default), then any explicit override.
+if [ -n "${KOBO_LIBRARY:-}" ]; then
+  BOOKS="$KOBO_LIBRARY"
+elif [ -d "$(dirname "$ROOT")/Library" ]; then
+  BOOKS="$(dirname "$ROOT")/Library"
+else
+  BOOKS="$ROOT/library"
+fi
+NBOOKS=0
+if [ -d "$BOOKS" ]; then
+  NBOOKS=$(find "$BOOKS" -type f \
+             ! -name 'README.md' ! -name '.gitkeep' ! -name '._*' ! -name '.DS_Store' \
+             2>/dev/null | wc -l | tr -d ' ' || echo 0)
+fi
+
+
 if [ "$DRY" = 1 ]; then
   step "Dry run — nothing will be written"
   rsync -an --delete --itemize-changes \
@@ -161,6 +179,22 @@ if [ "$DRY" = 1 ]; then
   head -40 "$TMPD/changes.txt"
   printf '\n  %s new · %s updated · %s deleted · %s lines total\n' "$ADD" "$UPD" "$DEL" "$TOTAL"
   say "${c_dim}(first 40 shown; full list: $TMPD/changes.txt)${c_off}"
+
+  if [ "$NBOOKS" -gt 0 ]; then
+    step "Books — would copy from $BOOKS"
+    say "  $NBOOKS book(s), $(safe_size "$BOOKS")"
+    rsync -an --itemize-changes \
+      --exclude '*.sdr/' --exclude '._*' --exclude '.DS_Store' \
+      --exclude 'README.md' --exclude '.gitkeep' --exclude '.git/' \
+      "$BOOKS/" "$DEVICE/" > "$TMPD/books.txt" 2>&1 || true
+    BNEW=$(grep -c '^>f+' "$TMPD/books.txt" 2>/dev/null || echo 0)
+    head -20 "$TMPD/books.txt"
+    printf '\n  %s new book file(s) would be copied\n' "$BNEW"
+  else
+    step "Books"
+    say "  $BOOKS is empty — no books would be copied."
+  fi
+
   KEEPTMP=1; exit 0
 fi
 
@@ -211,15 +245,6 @@ rsync -a "$PAYLOAD/.adds/nm/menu" "$DEVICE/.adds/nm/menu"
 rsync -a "$PAYLOAD/fonts/"        "$DEVICE/fonts/"
 rsync -a --delete "$PAYLOAD/.kobo/dict/" "$DEVICE/.kobo/dict/"
 ok "Fonts and dictionaries in place"
-
-# ─── books (only if library/ has any) ─────────────────────────────────────────
-BOOKS="${KOBO_LIBRARY:-$ROOT/library}"
-NBOOKS=0
-if [ -d "$BOOKS" ]; then
-  NBOOKS=$(find "$BOOKS" -type f \
-             ! -name 'README.md' ! -name '.gitkeep' ! -name '._*' ! -name '.DS_Store' \
-             2>/dev/null | wc -l | tr -d ' ' || echo 0)
-fi
 
 if [ "$NBOOKS" -gt 0 ]; then
   step "Copying books"
