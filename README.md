@@ -28,6 +28,17 @@
 | **Project: Title** | واجهة مكتبة أوضح وأسرع تصفّحًا |
 | **App Store** | تصفّح إضافات KOReader وثبّتها وحدّثها من الجهاز نفسه |
 | **LocalSend** | نقل ملفات لاسلكي، بلا كابل ولا خادم |
+| **خط الواجهة** | يمكن تغيير خط القوائم والمتصفّح إلى Amiri، فتُقرأ الواجهة نفسها بعربية صحيحة |
+| **Simple UI** | شاشة رئيسية بديلة — ساعة، اقتباس اليوم، أغلفة، إحصاءات قراءة، إجراءات سريعة |
+| **Bookshelf** | متصفّح ملفات بشكل رقائق/شبكة/قائمة مع بطاقة تفاصيل الكتاب (يحتاج تفعيل CoverBrowser المدمج في KOReader) |
+| **Reading Insights** | شاشات إحصاءات — وقت القراءة، التتابعات اليومية، رسوم شهرية، سجلّات، إنجازات |
+| **Bookends** | ترويسة/تذييل داخل الكتاب — أرقام الصفحات، أشرطة التقدّم، أنماط جاهزة |
+| **Annotations Viewer** | تصفّح كل تظليل وملاحظة في مكتبتك وتعديلها وإدارتها من مكان واحد |
+| **الأيقونات** | مجموعة Hugeicons — تستبدل أيقونات المتصفّح وشريط الأدوات |
+
+كما تُضاف ثلاث تعديلات (patches) صغيرة: نمط شاشة توقّف بحالتين، خيار استثناء
+كتب معيّنة من شاشة التوقّف بنمط الغلاف، وتنبيه «رجوع إلى آخر موضع توقّفت فيه
+فعليًا» بعد التنقّل داخل الكتاب.
 
 ويُضبط كذلك: العربية لغةً لنصّ الكتاب — فيصحّ ضبط الأسطر وفصل المقاطع.
 أمّا **واجهة البرنامج فتبقى بالإنجليزية**؛ المتغيّر هو طريقة عرض النص لا القوائم.
@@ -239,6 +250,14 @@ KOBO_MOUNT=/mnt/e ./install.sh
 - [Amiri](https://github.com/aliftype/amiri) — خالد حسني، رخصة SIL OFL 1.1
 - قاموس عربي‑إنجليزي — [wiktionary_stardict](https://github.com/xxyzz/wiktionary_stardict)، بيانات Wiktionary، رخصة CC BY-SA 4.0
 - قاموس إنجليزي‑عربي — محوّل عن بيانات [Arabeyes](https://www.arabeyes.org/)
+- [تعديل خط الواجهة](https://github.com/sebdelsol/KOReader.patches) — sebdelsol
+- [Simple UI](https://github.com/doctorhetfield-cmd/simpleui.koplugin) — doctorhetfield-cmd
+- [Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) و[Bookends](https://github.com/AndyHazz/bookends.koplugin) — AndyHazz
+- [Reading Insights](https://github.com/peterboda236/readinginsights.koplugin) — peterboda236
+- [Annotations Viewer](https://github.com/xblain/annotationsviewer.koplugin) — xblain، رخصة AGPL-3.0
+- تعديلات شاشة التوقّف واستثناء الأغلفة — [koreader-user-patches](https://github.com/omer-faruq/koreader-user-patches) — omer-faruq
+- تعديل موضع القراءة — مستخرج من [burrow.koplugin](https://github.com/richbeatty/burrow.koplugin) — richbeatty، رخصة AGPL-3.0
+- الأيقونات — [Hugeicons](https://hugeicons.com/) عبر [Iconify](https://iconify.design/) — رخصة MIT
 
 <div dir="rtl">
 

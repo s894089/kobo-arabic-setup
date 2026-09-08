@@ -22,6 +22,18 @@ organise a library. Open it in a browser after cloning.
 | **Project: Title** | v3.8.3 — a much better library screen |
 | **App Store** | Browse and update KOReader plugins on the device itself |
 | **LocalSend** | Wireless file transfer, no cable and no server |
+| **UI font** | Menus and the file browser can switch to Amiri, so the interface itself reads properly in Arabic |
+| **Simple UI** | Alternative homescreen — clock, quote of the day, cover deck, reading stats, quick actions |
+| **Bookshelf** | Chip-bar / grid / list file browser with a book-detail view (needs KOReader's built-in CoverBrowser enabled) |
+| **Reading Insights** | Stats screens — reading time, streaks, monthly charts, records, achievements |
+| **Bookends** | In-book header/footer — page numbers, progress bars, presets |
+| **Annotations Viewer** | Browse, edit and manage every highlight and note across your whole library |
+| **Icon set** | Hugeicons — replaces the file-browser and toolbar icons |
+
+Three extra user patches are also included: a dual-state screensaver mode,
+an option to exclude specific books from wallpaper/cover-mode screensavers,
+and a "go back to where I actually stopped reading" prompt after jumping
+around a book.
 
 It also sets Arabic as the text language for correct justification and
 hyphenation, and trims Kobo's bundled dictionaries down to English only.
@@ -191,6 +203,14 @@ This installer never touches them.
 - [Project: Title](https://github.com/joshuacant/ProjectTitle) — pin the release that names your KOReader version
 - Arabic→English dictionary — [wiktionary_stardict](https://github.com/xxyzz/wiktionary_stardict), Wiktionary data, CC BY-SA 4.0
 - English→Arabic dictionary — converted from [Arabeyes](https://www.arabeyes.org/) data
+- [UI font patch](https://github.com/sebdelsol/KOReader.patches) by sebdelsol
+- [Simple UI](https://github.com/doctorhetfield-cmd/simpleui.koplugin) by doctorhetfield-cmd
+- [Bookshelf](https://github.com/AndyHazz/bookshelf.koplugin) and [Bookends](https://github.com/AndyHazz/bookends.koplugin) by AndyHazz
+- [Reading Insights](https://github.com/peterboda236/readinginsights.koplugin) by peterboda236
+- [Annotations Viewer](https://github.com/xblain/annotationsviewer.koplugin) by xblain — AGPL-3.0
+- Screensaver and wallpaper-exclusion patches — [koreader-user-patches](https://github.com/omer-faruq/koreader-user-patches) by omer-faruq
+- Reading-location patch — extracted from [burrow.koplugin](https://github.com/richbeatty/burrow.koplugin) by richbeatty — AGPL-3.0
+- Icon set — [Hugeicons](https://hugeicons.com/) via [Iconify](https://iconify.design/) — MIT
 
 The scripts in this repository are MIT. Bundled third-party software keeps its
 own licence, included alongside it.
