@@ -98,6 +98,36 @@ local function getContentFont() return getSetting("content_font", nil) end
 local function getShowTotalNotes() return getSetting("show_total", true) end
 local function getTopPadding() return Screen:scaleBySize(getSetting("top_padding", DEFAULT_TOP_PADDING)) end
 local function getPreviewFudge() return tonumber(getSetting("preview_fudge", DEFAULT_PREVIEW_FUDGE)) end
+local function getHideDupTitle() return getSetting("hide_dup_title", true) ~= false end
+local function getHideDupInfo() return getSetting("hide_dup_info", true) ~= false end
+local function getFilterTitlebarBtn() return getSetting("filter_titlebar_btn", true) ~= false end
+local function getSwipeSetting() return getSetting("swipe_direction", "both") end
+local function getDedupInfoFields() return getSetting("dedup_info_fields", "date,author,chapter") end
+local function getShowInfo() return getSetting("show_info", true) ~= false end
+local function getInfoFields() return getSetting("info_fields", "date,author,chapter") end
+local function getAlwaysShowFirstOnPage() return getSetting("always_show_first_on_page", true) ~= false end
+local function getPaginationStyle() return getSetting("pagination_style", "right") end
+local SB_THUMB_WIDTH  = Screen:scaleBySize(8)
+local SB_MARGIN_RIGHT = Screen:scaleBySize(20.2)
+local SB_TRACK_WIDTH  = Screen:scaleBySize(1)
+local SB_MARGIN_V_TOP    = Screen:scaleBySize(16)
+local SB_MARGIN_V_BOTTOM = Screen:scaleBySize(26)
+
+local function getNoteInfoKey(note, fields_setting)
+    local parts = {}
+    local fields = {}
+    for f in fields_setting:gmatch("[^,]+") do fields[f] = true end
+    if fields["date"] then
+        table.insert(parts, note.datetime and note.datetime:match("^(%d+-%d+-%d+)") or "")
+    end
+    if fields["author"] then
+        table.insert(parts, note.book_authors or "")
+    end
+    if fields["chapter"] then
+        table.insert(parts, note.chapter or "")
+    end
+    return table.concat(parts, "|")
+end
 
 local SORT_MODES = {
     date_newest = { label = _("Newest First") },
@@ -135,7 +165,7 @@ local SPIN_MENUS = {
     },
     section_margin = {
         dialog_name = "section_margin_dialog",
-        title = _("Section Margins"),
+        title = _("Space Between Notes"),
         settings = {
             { label = _("After Title: "), key = "title_margin", default = DEFAULT_TITLE_MARGIN, min = 0, max = 30, step = 1, getter = function() return getSetting("title_margin", DEFAULT_TITLE_MARGIN) end },
             { label = _("After Info: "), key = "info_margin", default = DEFAULT_INFO_MARGIN, min = 0, max = 30, step = 1, getter = function() return getSetting("info_margin", DEFAULT_INFO_MARGIN) end },
@@ -143,7 +173,7 @@ local SPIN_MENUS = {
     },
     margins = {
         dialog_name = "margin_dialog",
-        title = _("Margins"),
+        title = _("Page Margins"),
         settings = {
             { label = _("Top Padding: "), key = "top_padding", default = DEFAULT_TOP_PADDING, min = 0, max = 100, step = 5, getter = function() return getSetting("top_padding", DEFAULT_TOP_PADDING) end },
             { label = _("Horizontal Margin: "), key = "h_margin", default = DEFAULT_H_MARGIN, min = 5, max = 60, step = 5, getter = function() return getSetting("h_margin", DEFAULT_H_MARGIN) end },
@@ -385,7 +415,7 @@ function UnderlineWidget:init() self.dimen = Geom:new{ w = self.width, h = self.
 function UnderlineWidget:paintTo(bb, x, y)
     bb:paintRect(x, y + self.height - 2, self.width, 2, BlitBuffer.COLOR_BLACK)
 end
-local NoteItemWidget = InputContainer:extend{ width = nil, note = nil, show_parent = nil, is_last = false, is_preview = false, disable_tap = false }
+local NoteItemWidget = InputContainer:extend{ width = nil, note = nil, show_parent = nil, is_last = false, is_preview = false, disable_tap = false, skip_title = false, skip_info = false }
 function NoteItemWidget:init()
     local h_margin = getHMargin()
     local text_margin = getTextMargin()
@@ -414,14 +444,20 @@ function NoteItemWidget:init()
 
     local date_text = self:formatDate(self.note.datetime) or ""
     local drawer = self.note.drawer or "lighten"
+    local show_info_header = getShowInfo()
+    local info_fields_str = getInfoFields()
+    local info_fields = {}
+    for f in info_fields_str:gmatch("[^,]+") do info_fields[f] = true end
     local info_parts = {}
-    if date_text ~= "" then table.insert(info_parts, date_text) end
-    local display_authors = note_wrapper:getDisplayAuthors()
-    if display_authors then
-        table.insert(info_parts, display_authors)
-    end
-    if self.note.chapter and self.note.chapter ~= "" then
-        table.insert(info_parts, self.note.chapter)
+    if show_info_header then
+        if info_fields["date"] and date_text ~= "" then table.insert(info_parts, date_text) end
+        local display_authors = note_wrapper:getDisplayAuthors()
+        if info_fields["author"] and display_authors and not self.skip_title then
+            table.insert(info_parts, display_authors)
+        end
+        if info_fields["chapter"] and self.note.chapter and self.note.chapter ~= "" then
+            table.insert(info_parts, self.note.chapter)
+        end
     end
     local info_text = table.concat(info_parts, " | ")
 
@@ -452,18 +488,25 @@ function NoteItemWidget:init()
     local line_width = text_content_width - Size.padding.small * 2
 
     local note_content = VerticalGroup:new{ align = "left" }
-    table.insert(note_content, LeftContainer:new{
-        dimen = Geom:new{ w = inner_width, h = title_widget:getSize().h },
-        HorizontalGroup:new{ HorizontalSpan:new{ width = h_padding }, title_widget },
-    })
-    table.insert(note_content, VerticalSpan:new{ width = title_margin })
-    if info_text ~= "" then
+    if not self.skip_title then
+        table.insert(note_content, LeftContainer:new{
+            dimen = Geom:new{ w = inner_width, h = title_widget:getSize().h },
+            HorizontalGroup:new{ HorizontalSpan:new{ width = h_padding }, title_widget },
+        })
+        table.insert(note_content, VerticalSpan:new{ width = title_margin })
+    end
+    local info_visible = show_info_header and not self.skip_info and info_text ~= ""
+    if info_visible then
         table.insert(note_content, LeftContainer:new{
             dimen = Geom:new{ w = inner_width, h = date_widget:getSize().h },
             HorizontalGroup:new{ HorizontalSpan:new{ width = h_padding }, date_widget },
         })
     end
-    table.insert(note_content, VerticalSpan:new{ width = info_margin })
+    -- only add the post-header margin when at least one header row is actually shown
+    local any_header_visible = (not self.skip_title) or info_visible
+    if any_header_visible then
+        table.insert(note_content, VerticalSpan:new{ width = info_margin })
+    end
     
     if note_wrapper:hasHighlightedText() then
         
@@ -611,6 +654,7 @@ end
 local NotesListWidget = InputContainer:extend{
     width = nil, height = nil, notes_list = nil, filtered_notes = nil,
     viewer = nil, current_page = 1, pages = nil, active_filter = nil,
+    single_book = false,
 }
 function NotesListWidget:init()
     self.width = Screen:getWidth()
@@ -631,9 +675,25 @@ function NotesListWidget:init()
         close_callback = function() end,
     }
     self.title_height = temp_title:getHeight()
+    -- Compute close button center x for scrollbar alignment
+    if temp_title.right_button then
+        local bp = Screen:scaleBySize(5)
+        local icon_w = math.floor((temp_title.right_button.dimen.w - bp) / 3)
+        local close_center_x = self.width - bp - math.floor(icon_w / 2)
+        self.close_center_x = close_center_x
+        self.close_btn_w = icon_w
+        self.sb_x = self.width - icon_w
+    else
+        local fallback_w = SB_THUMB_WIDTH + SB_MARGIN_RIGHT
+        self.close_center_x = self.width - SB_MARGIN_RIGHT - math.floor(SB_THUMB_WIDTH / 2)
+        self.close_btn_w = fallback_w
+        self.sb_x = self.width - fallback_w
+    end
     local temp_button = Button:new{ icon = "chevron.first", bordersize = 0 }
-    self.footer_height = temp_button:getSize().h
+    local btn_h = temp_button:getSize().h
     temp_button:free()
+    local pag_style = getPaginationStyle()
+    self.footer_height = (pag_style == "scrollbar") and 0 or btn_h
     self.content_height = self.height - self.title_height - self.footer_height - getTopPadding()
     self:applyFilter()
     self:calculatePages()
@@ -643,8 +703,18 @@ function NotesListWidget:init()
         self.key_events.GotoNextPage = { { Input.group.PgFwd } }
         self.key_events.Close = { { Input.group.Back } }  
     end
-    if not G_reader_settings:isTrue("page_turns_disable_swipe") then
-        self.ges_events = { Swipe = { GestureRange:new{ ges = "swipe", range = self.dimen } } }
+    local swipe_setting = getSwipeSetting()
+    if swipe_setting ~= "disabled" and not G_reader_settings:isTrue("page_turns_disable_swipe") then
+        local swipe_dimen = self.dimen
+        self.ges_events = {}
+        if swipe_setting == "horizontal" or swipe_setting == "both" then
+            self.ges_events.SwipeWest = { GestureRange:new{ ges = "swipe", range = swipe_dimen, direction = "west" } }
+            self.ges_events.SwipeEast = { GestureRange:new{ ges = "swipe", range = swipe_dimen, direction = "east" } }
+        end
+        if swipe_setting == "vertical" or swipe_setting == "both" then
+            self.ges_events.SwipeNorth = { GestureRange:new{ ges = "swipe", range = swipe_dimen, direction = "north" } }
+            self.ges_events.SwipeSouth = { GestureRange:new{ ges = "swipe", range = swipe_dimen, direction = "south" } }
+        end
     else
         self.ges_events = {}
     end
@@ -653,28 +723,99 @@ function NotesListWidget:init()
     self.initial_update = true
 end
 function NotesListWidget:applyFilter()
+    local function textMatches(raw, query, mode, case_sensitive)
+        local text = case_sensitive and raw or raw:lower()
+        local q    = case_sensitive and query or query:lower()
+        if mode == "phrase" then
+            return text:find(q, 1, true) ~= nil
+        elseif mode == "any" then
+            for word in q:gmatch("%S+") do
+                if text:find(word, 1, true) then return true end
+            end
+            return false
+        else -- "all"
+            for word in q:gmatch("%S+") do
+                if not text:find(word, 1, true) then return false end
+            end
+            return true
+        end
+    end
     self.filtered_notes = {}
     for _, note in ipairs(self.notes_list) do
         local match = true
         if self.active_filter then
-            if self.active_filter.books and next(self.active_filter.books) ~= nil then
-                match = self.active_filter.books[note.book_title] == true
+            local af = self.active_filter
+            -- Books include / exclude
+            if af.books and next(af.books) then
+                match = af.books[note.book_title] == true
             end
-            if match and self.active_filter.tags and next(self.active_filter.tags) ~= nil then
-                local note_wrapper = NoteWrapper:new(note)
-                local note_tags = note_wrapper:getTags()
+            if match and af.books_exclude and next(af.books_exclude) then
+                if af.books_exclude[note.book_title] then match = false end
+            end
+            -- Tags include / exclude
+            if match and af.tags and next(af.tags) then
+                local nw = NoteWrapper:new(note)
                 local found = false
-                for _, tag in ipairs(note_tags) do
-                    if self.active_filter.tags[tag] then found = true break end
+                for _, tag in ipairs(nw:getTags()) do
+                    if af.tags[tag] then found = true; break end
                 end
                 match = found
             end
-            if match and self.active_filter.type == "color" then
-                local note_wrapper = NoteWrapper:new(note)
-                match = note_wrapper:getNormalizedColor() == self.active_filter.value
-            elseif match and self.active_filter.type == "style" then
-                local note_wrapper = NoteWrapper:new(note)
-                match = note_wrapper:getNormalizedDrawer() == self.active_filter.value
+            if match and af.tags_exclude and next(af.tags_exclude) then
+                local nw = NoteWrapper:new(note)
+                for _, tag in ipairs(nw:getTags()) do
+                    if af.tags_exclude[tag] then match = false; break end
+                end
+            end
+            -- Chapters include / exclude
+            if match and af.chapters and next(af.chapters) then
+                match = note.chapter and af.chapters[note.chapter] == true
+            end
+            if match and af.chapters_exclude and next(af.chapters_exclude) then
+                if note.chapter and af.chapters_exclude[note.chapter] then match = false end
+            end
+            -- Color / Style include
+            if match and af.type == "color" then
+                match = NoteWrapper:new(note):getNormalizedColor() == af.value
+            elseif match and af.type == "style" then
+                match = NoteWrapper:new(note):getNormalizedDrawer() == af.value
+            end
+            -- Color / Style exclude
+            if match and af.type_exclude == "color" then
+                if NoteWrapper:new(note):getNormalizedColor() == af.value_exclude then match = false end
+            elseif match and af.type_exclude == "style" then
+                if NoteWrapper:new(note):getNormalizedDrawer() == af.value_exclude then match = false end
+            end
+            -- Highlight text include / exclude
+            if match and af.search_highlight and af.search_highlight ~= "" then
+                match = textMatches(note.highlighted_text or "", af.search_highlight,
+                    af.search_highlight_mode or "all", af.search_highlight_case == true)
+            end
+            if match and af.search_highlight_exclude and af.search_highlight_exclude ~= "" then
+                if textMatches(note.highlighted_text or "", af.search_highlight_exclude,
+                    af.search_highlight_exclude_mode or "all", af.search_highlight_exclude_case == true) then
+                    match = false
+                end
+            end
+            -- Note text include / exclude
+            if match and af.search_note and af.search_note ~= "" then
+                match = textMatches(note.user_note or "", af.search_note,
+                    af.search_note_mode or "all", af.search_note_case == true)
+            end
+            if match and af.search_note_exclude and af.search_note_exclude ~= "" then
+                if textMatches(note.user_note or "", af.search_note_exclude,
+                    af.search_note_exclude_mode or "all", af.search_note_exclude_case == true) then
+                    match = false
+                end
+            end
+            -- Notes presence
+            if match and af.notes_presence then
+                local has_note = note.user_note and note.user_note ~= ""
+                if af.notes_presence == "only" then
+                    match = has_note ~= false and has_note ~= nil
+                elseif af.notes_presence == "exclude" then
+                    match = not (has_note ~= false and has_note ~= nil)
+                end
             end
         end
         if match then table.insert(self.filtered_notes, note) end
@@ -687,8 +828,18 @@ function NotesListWidget:calculatePages()
     
     local filter_text = self.active_filter and (
         (self.active_filter.value and (self.active_filter.type == "color" or self.active_filter.type == "style")) or
+        (self.active_filter.value_exclude and (self.active_filter.type_exclude == "color" or self.active_filter.type_exclude == "style")) or
         (self.active_filter.books and next(self.active_filter.books)) or
-        (self.active_filter.tags and next(self.active_filter.tags))
+        (self.active_filter.books_exclude and next(self.active_filter.books_exclude)) or
+        (self.active_filter.tags and next(self.active_filter.tags)) or
+        (self.active_filter.tags_exclude and next(self.active_filter.tags_exclude)) or
+        (self.active_filter.search_highlight and self.active_filter.search_highlight ~= "") or
+        (self.active_filter.search_highlight_exclude and self.active_filter.search_highlight_exclude ~= "") or
+        (self.active_filter.search_note and self.active_filter.search_note ~= "") or
+        (self.active_filter.search_note_exclude and self.active_filter.search_note_exclude ~= "") or
+        (self.active_filter.chapters and next(self.active_filter.chapters)) or
+        (self.active_filter.chapters_exclude and next(self.active_filter.chapters_exclude)) or
+        (self.active_filter.notes_presence ~= nil)
     ) or false
     
     local subtitle_height = 0
@@ -706,8 +857,24 @@ function NotesListWidget:calculatePages()
     local available_content_height = self.content_height - subtitle_height
     local effective_content_height = available_content_height + getPreviewFudge()
     
+    local dedup_prev_title = nil
+    local dedup_prev_info_key = nil
+    local dedup_fields = getDedupInfoFields()
+    local do_hide_dup_title = getHideDupTitle()
+    local do_hide_dup_info = getHideDupInfo()
+    local always_show_first = getAlwaysShowFirstOnPage()
+    local sb_track_center = (self.sb_x or 0) + math.floor((SB_THUMB_WIDTH - SB_TRACK_WIDTH) / 2) + math.floor(SB_TRACK_WIDTH / 2)
+    local sb_reserve = (getPaginationStyle() == "scrollbar") and (self.width - sb_track_center) or 0
+    local note_width = self.width - sb_reserve
     for i, note in ipairs(self.filtered_notes) do
-        local temp_widget = NoteItemWidget:new{ width = self.width, note = note, show_parent = self }
+        local is_first_on_page = (#current_page_notes == 0)
+        local skip_title = do_hide_dup_title
+            and not (always_show_first and is_first_on_page)
+            and (note.book_title == dedup_prev_title)
+        local skip_info = do_hide_dup_info
+            and not (always_show_first and is_first_on_page)
+            and (getNoteInfoKey(note, dedup_fields) == dedup_prev_info_key)
+        local temp_widget = NoteItemWidget:new{ width = note_width, note = note, show_parent = self, skip_title = skip_title, skip_info = skip_info }
         local item_height = temp_widget.dimen.h
         local spacing = (#current_page_notes > 0) and note_spacing or 0
         local next_height = current_height + spacing + item_height
@@ -716,89 +883,264 @@ function NotesListWidget:calculatePages()
             table.insert(current_page_notes, i)
         else
             if #current_page_notes > 0 then table.insert(self.pages, current_page_notes) end
+            -- Re-measure as first-on-page: always_show_first may restore title/info headers
+            local first_widget = NoteItemWidget:new{ width = note_width, note = note, show_parent = self, skip_title = false, skip_info = false }
             current_page_notes = {i}
-            current_height = item_height
+            current_height = first_widget.dimen.h
         end
+        dedup_prev_title = note.book_title
+        dedup_prev_info_key = getNoteInfoKey(note, dedup_fields)
     end
     if #current_page_notes > 0 then table.insert(self.pages, current_page_notes) end
     if #self.pages == 0 then self.pages = {{}} end
     self.total_pages = #self.pages
 end
 function NotesListWidget:createFooter()
-    local RightContainer = require("ui/widget/container/rightcontainer")
-    local chevron_left = "chevron.left"
-    local chevron_right = "chevron.right"
-    local chevron_first = "chevron.first"
-    local chevron_last = "chevron.last"
-    if BD.mirroredUILayout() then
-        chevron_left, chevron_right = chevron_right, chevron_left
-        chevron_first, chevron_last = chevron_last, chevron_first
+    local style = getPaginationStyle()
+
+    if style == "scrollbar" or style == "scrollbar_chevrons" then
+        -- Vertical scrollbar on the right edge, no bottom footer
+        if self.total_pages <= 1 then return VerticalGroup:new{} end
+        local has_chevrons = (style == "scrollbar_chevrons")
+        local sb_track_width     = SB_TRACK_WIDTH
+        local sb_thumb_width     = SB_THUMB_WIDTH
+        local sb_margin_v_top    = SB_MARGIN_V_TOP
+        local sb_margin_v_bottom = SB_MARGIN_V_BOTTOM
+        -- sb_x = self.width - close_btn_w, so strip_w == close_btn_w exactly
+        local strip_w = Screen:scaleBySize(32+16+3)
+        local sb_x    = self.width - strip_w
+        local chev_h  = has_chevrons and strip_w or 0
+        local chev_gap = has_chevrons and Screen:scaleBySize(4) or 0
+        local full_sb_height = self.height - self.title_height - sb_margin_v_top - sb_margin_v_bottom
+        --local sb_height = has_chevrons and (full_sb_height - chev_h * 2 - chev_gap * 2) or full_sb_height
+        local sb_height = has_chevrons and (full_sb_height - chev_h * 2) or full_sb_height
+        local low  = (self.current_page - 1) / self.total_pages
+        local high = self.current_page / self.total_pages
+        local thumb_h     = math.max(Screen:scaleBySize(16), math.floor(sb_height * (high - low)))
+        -- Map so thumb is flush at top on page 1 and flush at bottom on last page
+        local travel      = sb_height - thumb_h
+        local thumb_y_off = math.floor(low / (1 - 1 / self.total_pages) * travel + 0.5)
+        thumb_y_off       = math.max(0, math.min(travel, thumb_y_off))
+        local self_ref = self
+        local hit_x      = sb_x
+        local hit_width  = strip_w
+        --local hit_y_top  = self.title_height + sb_margin_v_top + chev_h + chev_gap
+        local hit_y_top  = self.title_height + sb_margin_v_top + chev_h
+        local hit_height = sb_height
+        local CustomScrollBar = InputContainer:extend{
+            width  = strip_w,
+            height = sb_height,
+        }
+        function CustomScrollBar:init()
+            self.dimen = Geom:new{ x = hit_x, y = hit_y_top, w = hit_width, h = hit_height }
+            self.ges_events = {
+                TapScrollBar = {
+                    GestureRange:new{ ges = "tap", range = self.dimen },
+                },
+            }
+        end
+        function CustomScrollBar:onTapScrollBar(_, ges)
+            if not ges or not ges.pos then return end
+            local rel = (ges.pos.y - hit_y_top) / hit_height
+            rel = math.max(0, math.min(1, rel))
+            local page = math.max(1, math.min(self_ref.total_pages, math.ceil(rel * self_ref.total_pages)))
+            self_ref.current_page = page
+            self_ref:updatePage()
+            return true
+        end
+        function CustomScrollBar:paintTo(bb, x, y)
+            -- center thumb within strip_w
+            local thumb_x = x + math.floor((strip_w - sb_thumb_width) / 2)
+            local track_x = thumb_x + math.floor((sb_thumb_width - sb_track_width) / 2)
+            bb:paintRect(track_x, y, sb_track_width, self.height, BlitBuffer.COLOR_BLACK)
+            local radius = math.floor(sb_thumb_width / 2)
+            bb:paintRoundedRect(thumb_x, y + thumb_y_off, sb_thumb_width, thumb_h, BlitBuffer.COLOR_WHITE, radius)
+            bb:paintBorder(thumb_x, y + thumb_y_off, sb_thumb_width, thumb_h, 2, BlitBuffer.COLOR_BLACK, radius)
+        end
+        local sb = CustomScrollBar:new{}
+        if not has_chevrons then
+            return VerticalGroup:new{
+                VerticalSpan:new{ width = self.title_height + sb_margin_v_top },
+                HorizontalGroup:new{
+                    HorizontalSpan:new{ width = sb_x },
+                    sb,
+                },
+            }
+        end
+        -- scrollbar_chevrons: one widget for the full strip — paints chevrons+scrollbar, dispatches taps by Y
+        local up_enabled = self.current_page > 1
+        local dn_enabled = self.current_page < self.total_pages
+        local IconWidget = require("ui/widget/iconwidget")
+        local btn_h = strip_w  -- square buttons
+        local up_abs_y = self.title_height + sb_margin_v_top
+        local dn_abs_y = up_abs_y + btn_h + sb_height
+        local icon_size = Screen:scaleBySize(32)
+        local icon_ox = math.floor((strip_w - icon_size) / 2)
+
+        local up_icon = IconWidget:new{ icon = "chevron.up", width = icon_size, height = icon_size, dim = not up_enabled }
+        local dn_icon = IconWidget:new{ icon = "chevron.up", rotation_angle = 180, width = icon_size, height = icon_size, dim = not dn_enabled }
+
+        local full_strip_h = btn_h * 2 + sb_height
+        local strip_range = Geom:new{ x = sb_x, y = up_abs_y, w = strip_w, h = full_strip_h }
+        local ChevronStrip = InputContainer:extend{ width = strip_w, height = full_strip_h }
+        function ChevronStrip:init()
+            self.dimen = strip_range
+            self.ges_events = { Tap = { GestureRange:new{ ges = "tap", range = strip_range } } }
+        end
+        function ChevronStrip:onTap(_, ges)
+            if not ges or not ges.pos then return end
+            if ges.pos.x < sb_x then return end
+            local y = ges.pos.y
+            if y < up_abs_y + btn_h then
+                if up_enabled then self_ref:onGotoPrevPage() end
+            elseif y >= dn_abs_y then
+                if dn_enabled then self_ref:onGotoNextPage() end
+            else
+                -- scrollbar tap
+                local rel = (y - (up_abs_y + btn_h)) / sb_height
+                rel = math.max(0, math.min(1, rel))
+                local page = math.max(1, math.min(self_ref.total_pages, math.ceil(rel * self_ref.total_pages)))
+                self_ref.current_page = page
+                self_ref:updatePage()
+            end
+            return true
+        end
+        function ChevronStrip:paintTo(bb, x, y)
+            -- up chevron: centered horizontally, at top of strip
+            up_icon:paintTo(bb, x + icon_ox, y)
+            -- scrollbar track + thumb
+            local sb_y = y + btn_h
+            local thumb_x = x + math.floor((strip_w - sb_thumb_width) / 2)
+            local track_x = thumb_x + math.floor((sb_thumb_width - sb_track_width) / 2)
+            bb:paintRect(track_x, sb_y, sb_track_width, sb_height, BlitBuffer.COLOR_BLACK)
+            local radius = math.floor(sb_thumb_width / 2)
+            bb:paintRoundedRect(thumb_x, sb_y + thumb_y_off, sb_thumb_width, thumb_h, BlitBuffer.COLOR_WHITE, radius)
+            bb:paintBorder(thumb_x, sb_y + thumb_y_off, sb_thumb_width, thumb_h, 2, BlitBuffer.COLOR_BLACK, radius)
+            -- dn chevron: centered horizontally, at bottom of strip
+            dn_icon:paintTo(bb, x + icon_ox, y + btn_h + sb_height + math.floor(btn_h - icon_size))
+        end
+
+        return VerticalGroup:new{
+            VerticalSpan:new{ width = self.title_height + sb_margin_v_top },
+            HorizontalGroup:new{
+                HorizontalSpan:new{ width = sb_x },
+                ChevronStrip:new{},
+            },
+        }
+    elseif style == "default" then
+        -- KOReader file manager style: centered chevrons with spacers
+        local chevron_left = "chevron.left"
+        local chevron_right = "chevron.right"
+        local chevron_first = "chevron.first"
+        local chevron_last = "chevron.last"
+        if BD.mirroredUILayout() then
+            chevron_left, chevron_right = chevron_right, chevron_left
+            chevron_first, chevron_last = chevron_last, chevron_first
+        end
+        local spacer = HorizontalSpan:new{ width = Screen:scaleBySize(32) }
+        local first_chev = Button:new{ icon = chevron_first, callback = function() self.current_page = 1; self:updatePage() end, bordersize = 0, show_parent = self }
+        local left_chev  = Button:new{ icon = chevron_left,  callback = function() self:onGotoPrevPage() end, bordersize = 0, show_parent = self }
+        local page_text  = Button:new{ text = string.format(_("Page %1 of %2"):gsub("%%1", self.current_page):gsub("%%2", self.total_pages), ""), text_font_bold = false, bordersize = 0, show_parent = self }
+        local right_chev = Button:new{ icon = chevron_right, callback = function() self:onGotoNextPage() end, bordersize = 0, show_parent = self }
+        local last_chev  = Button:new{ icon = chevron_last,  callback = function() self.current_page = self.total_pages; self:updatePage() end, bordersize = 0, show_parent = self }
+        first_chev:enableDisable(self.current_page > 1)
+        left_chev:enableDisable(self.current_page > 1)
+        right_chev:enableDisable(self.current_page < self.total_pages)
+        last_chev:enableDisable(self.current_page < self.total_pages)
+        local page_info = HorizontalGroup:new{
+            first_chev, spacer, left_chev, spacer, page_text, spacer, right_chev, spacer, last_chev,
+        }
+        local FrameContainer = require("ui/widget/container/framecontainer")
+        return BottomContainer:new{
+            dimen = Geom:new{ w = self.width, h = self.height },
+            FrameContainer:new{
+                width = self.width,
+                height = page_info:getSize().h,
+                padding = 0, margin = 0, bordersize = 0,
+                background = BlitBuffer.COLOR_WHITE,
+                CenterContainer:new{
+                    dimen = Geom:new{ w = self.width, h = page_info:getSize().h },
+                    page_info,
+                },
+            },
+        }
+    elseif style == "left" then
+        -- Left-aligned chevrons style
+        local chevron_left = "chevron.left"
+        local chevron_right = "chevron.right"
+        local chevron_first = "chevron.first"
+        local chevron_last = "chevron.last"
+        if BD.mirroredUILayout() then
+            chevron_left, chevron_right = chevron_right, chevron_left
+            chevron_first, chevron_last = chevron_last, chevron_first
+        end
+        local first_chev = Button:new{ icon = chevron_first, callback = function() self.current_page = 1; self:updatePage() end, bordersize = 0, show_parent = self }
+        local left_chev  = Button:new{ icon = chevron_left,  callback = function() self:onGotoPrevPage() end, bordersize = 0, show_parent = self }
+        local page_text  = Button:new{ text = string.format("%d of %d", self.current_page, self.total_pages), text_font_bold = false, text_font_face = "pgfont", bordersize = 0, show_parent = self }
+        local right_chev = Button:new{ icon = chevron_right, callback = function() self:onGotoNextPage() end, bordersize = 0, show_parent = self }
+        local last_chev  = Button:new{ icon = chevron_last,  callback = function() self.current_page = self.total_pages; self:updatePage() end, bordersize = 0, show_parent = self }
+        first_chev:enableDisable(self.current_page > 1)
+        left_chev:enableDisable(self.current_page > 1)
+        right_chev:enableDisable(self.current_page < self.total_pages)
+        last_chev:enableDisable(self.current_page < self.total_pages)
+        local page_info = HorizontalGroup:new{
+            first_chev, left_chev, page_text, right_chev, last_chev,
+        }
+        local LeftContainer = require("ui/widget/container/leftcontainer")
+        local page_info_container = LeftContainer:new{
+            dimen = Geom:new{ w = math.floor(self.width * 0.98), h = page_info:getSize().h },
+            page_info,
+        }
+        local FrameContainer = require("ui/widget/container/framecontainer")
+        return BottomContainer:new{
+            dimen = Geom:new{ w = self.width, h = self.height },
+            FrameContainer:new{
+                width = self.width,
+                height = page_info_container:getSize().h,
+                padding = 0, margin = 0, bordersize = 0,
+                background = BlitBuffer.COLOR_WHITE,
+                page_info_container,
+            },
+        }
+    else
+        -- right-aligned chevrons style
+        local RightContainer = require("ui/widget/container/rightcontainer")
+        local chevron_left = "chevron.left"
+        local chevron_right = "chevron.right"
+        local chevron_first = "chevron.first"
+        local chevron_last = "chevron.last"
+        if BD.mirroredUILayout() then
+            chevron_left, chevron_right = chevron_right, chevron_left
+            chevron_first, chevron_last = chevron_last, chevron_first
+        end
+        local first_chev = Button:new{ icon = chevron_first, callback = function() self.current_page = 1; self:updatePage() end, bordersize = 0, show_parent = self }
+        local left_chev  = Button:new{ icon = chevron_left,  callback = function() self:onGotoPrevPage() end, bordersize = 0, show_parent = self }
+        local page_text  = Button:new{ text = string.format("%d of %d", self.current_page, self.total_pages), text_font_bold = false, text_font_face = "pgfont", bordersize = 0, show_parent = self }
+        local right_chev = Button:new{ icon = chevron_right, callback = function() self:onGotoNextPage() end, bordersize = 0, show_parent = self }
+        local last_chev  = Button:new{ icon = chevron_last,  callback = function() self.current_page = self.total_pages; self:updatePage() end, bordersize = 0, show_parent = self }
+        first_chev:enableDisable(self.current_page > 1)
+        left_chev:enableDisable(self.current_page > 1)
+        right_chev:enableDisable(self.current_page < self.total_pages)
+        last_chev:enableDisable(self.current_page < self.total_pages)
+        local page_info = HorizontalGroup:new{
+            first_chev, left_chev, page_text, right_chev, last_chev,
+        }
+        local page_info_container = RightContainer:new{
+            dimen = Geom:new{ w = math.floor(self.width * 0.98), h = page_info:getSize().h },
+            page_info,
+        }
+        local FrameContainer = require("ui/widget/container/framecontainer")
+        return BottomContainer:new{
+            dimen = Geom:new{ w = self.width, h = self.height },
+            FrameContainer:new{
+                width = self.width,
+                height = page_info_container:getSize().h,
+                padding = 0, margin = 0, bordersize = 0,
+                background = BlitBuffer.COLOR_WHITE,
+                page_info_container,
+            },
+        }
     end
-
-    self.page_info_first_chev = Button:new{
-        icon = chevron_first,
-        callback = function() self.current_page = 1; self:updatePage() end,
-        bordersize = 0,
-        show_parent = self,
-    }
-    self.page_info_left_chev = Button:new{
-        icon = chevron_left,
-        callback = function() self:onGotoPrevPage() end,
-        bordersize = 0,
-        show_parent = self,
-    }
-    self.page_info_text = Button:new{
-        text = string.format("%d / %d", self.current_page, self.total_pages),
-        text_font_bold = false,
-        text_font_face = "pgfont",
-        bordersize = 0,
-        show_parent = self,
-    }
-    self.page_info_right_chev = Button:new{
-        icon = chevron_right,
-        callback = function() self:onGotoNextPage() end,
-        bordersize = 0,
-        show_parent = self,
-    }
-    self.page_info_last_chev = Button:new{
-        icon = chevron_last,
-        callback = function() self.current_page = self.total_pages; self:updatePage() end,
-        bordersize = 0,
-        show_parent = self,
-    }
-
-    self.page_info_first_chev:enableDisable(self.current_page > 1)
-    self.page_info_left_chev:enableDisable(self.current_page > 1)
-    self.page_info_right_chev:enableDisable(self.current_page < self.total_pages)
-    self.page_info_last_chev:enableDisable(self.current_page < self.total_pages)
-
-    self.page_info = HorizontalGroup:new{
-        self.page_info_first_chev,
-        self.page_info_left_chev,
-        self.page_info_text,
-        self.page_info_right_chev,
-        self.page_info_last_chev,
-    }
-
-
-    local page_info_container = RightContainer:new{
-        dimen = Geom:new{ w = math.floor(self.width * 0.98), h = self.page_info:getSize().h },
-        self.page_info,
-    }
-
-    local FrameContainer = require("ui/widget/container/framecontainer")
-    return BottomContainer:new{
-        dimen = Geom:new{ w = self.width, h = self.height },
-        FrameContainer:new{
-            width = self.width,
-            height = page_info_container:getSize().h,
-            padding = 0,
-            margin = 0,
-            bordersize = 0,
-            background = BlitBuffer.COLOR_WHITE,
-            page_info_container,
-        },
-    }
 end
 function NotesListWidget:updatePage()
     self.width = Screen:getWidth()
@@ -817,37 +1159,110 @@ function NotesListWidget:updatePage()
         close_callback = function() end,
     }
     self.title_height = temp_title:getHeight()
+    -- Recompute close button center x (screen may have rotated)
+    if temp_title.right_button then
+        local bp = Screen:scaleBySize(5)
+        local icon_w = math.floor((temp_title.right_button.dimen.w - bp) / 3)
+        local close_center_x = self.width - bp - math.floor(icon_w / 2)
+        self.close_center_x = close_center_x
+        self.sb_x = close_center_x - math.floor(SB_THUMB_WIDTH / 2)
+    else
+        self.close_center_x = self.width - SB_MARGIN_RIGHT - math.floor(SB_THUMB_WIDTH / 2)
+        self.sb_x = self.width - SB_THUMB_WIDTH - SB_MARGIN_RIGHT
+    end
     local temp_button = Button:new{ icon = "chevron.first", bordersize = 0 }
-    self.footer_height = temp_button:getSize().h
+    local btn_h = temp_button:getSize().h
     temp_button:free()
+    local pag_style = getPaginationStyle()
+    self.footer_height = (pag_style == "scrollbar") and 0 or btn_h
     self.content_height = self.height - self.title_height - self.footer_height - getTopPadding()
-    
-    
+
+
 local function filterToString(filter)
     if not filter then return "" end
     local parts = {}
+    -- Color / Style include
     if filter.type == "color" or filter.type == "style" then
         local prefix = filter.type == "color" and "C: " or "S: "
         local name = nil
         if filter.type == "color" then
             for _, v in ipairs(ReaderHighlight.highlight_colors) do
-                if v[2] == filter.value then
-                    name = v[1]
-                    break
-                end
+                if v[2] == filter.value then name = v[1]; break end
             end
         end
         table.insert(parts, prefix .. (name or (filter.value:sub(1,1):upper() .. filter.value:sub(2))))
     end
+    -- Color / Style exclude
+    if filter.type_exclude == "color" or filter.type_exclude == "style" then
+        local prefix = filter.type_exclude == "color" and "C≠ " or "S≠ "
+        local name = nil
+        if filter.type_exclude == "color" then
+            for _, v in ipairs(ReaderHighlight.highlight_colors) do
+                if v[2] == filter.value_exclude then name = v[1]; break end
+            end
+        end
+        table.insert(parts, prefix .. (name or (filter.value_exclude:sub(1,1):upper() .. filter.value_exclude:sub(2))))
+    end
+    -- Books include / exclude
     if filter.books and next(filter.books) then
         local books = {}
         for k in pairs(filter.books) do table.insert(books, k) end
         table.insert(parts, "B: " .. table.concat(books, ", "))
     end
+    if filter.books_exclude and next(filter.books_exclude) then
+        local books = {}
+        for k in pairs(filter.books_exclude) do table.insert(books, k) end
+        table.insert(parts, "B≠ " .. table.concat(books, ", "))
+    end
+    -- Tags include / exclude
     if filter.tags and next(filter.tags) then
         local tags = {}
         for k in pairs(filter.tags) do table.insert(tags, k) end
         table.insert(parts, "T: " .. table.concat(tags, ", "))
+    end
+    if filter.tags_exclude and next(filter.tags_exclude) then
+        local tags = {}
+        for k in pairs(filter.tags_exclude) do table.insert(tags, k) end
+        table.insert(parts, "T≠ " .. table.concat(tags, ", "))
+    end
+    -- Highlight text include / exclude
+    if filter.search_highlight and filter.search_highlight ~= "" then
+        local mode = filter.search_highlight_mode or "all"
+        local mode_str = mode == "any" and " (any word)" or mode == "phrase" and " (phrase)" or ""
+        local case_str = filter.search_highlight_case and " [Aa]" or ""
+        table.insert(parts, "H: \"" .. filter.search_highlight .. "\"" .. mode_str .. case_str)
+    end
+    if filter.search_highlight_exclude and filter.search_highlight_exclude ~= "" then
+        local mode = filter.search_highlight_exclude_mode or "all"
+        local mode_str = mode == "any" and " (any word)" or mode == "phrase" and " (phrase)" or ""
+        local case_str = filter.search_highlight_exclude_case and " [Aa]" or ""
+        table.insert(parts, "H≠ \"" .. filter.search_highlight_exclude .. "\"" .. mode_str .. case_str)
+    end
+    -- Note text include / exclude
+    if filter.search_note and filter.search_note ~= "" then
+        local mode = filter.search_note_mode or "all"
+        local mode_str = mode == "any" and " (any word)" or mode == "phrase" and " (phrase)" or ""
+        local case_str = filter.search_note_case and " [Aa]" or ""
+        table.insert(parts, "N: \"" .. filter.search_note .. "\"" .. mode_str .. case_str)
+    end
+    if filter.search_note_exclude and filter.search_note_exclude ~= "" then
+        local mode = filter.search_note_exclude_mode or "all"
+        local mode_str = mode == "any" and " (any word)" or mode == "phrase" and " (phrase)" or ""
+        local case_str = filter.search_note_exclude_case and " [Aa]" or ""
+        table.insert(parts, "N≠ \"" .. filter.search_note_exclude .. "\"" .. mode_str .. case_str)
+    end
+    -- Chapters include / exclude
+    if filter.chapters and next(filter.chapters) then
+        local chs = {}
+        for k in pairs(filter.chapters) do table.insert(chs, k) end
+        table.sort(chs)
+        table.insert(parts, "Ch: " .. table.concat(chs, ", "))
+    end
+    if filter.chapters_exclude and next(filter.chapters_exclude) then
+        local chs = {}
+        for k in pairs(filter.chapters_exclude) do table.insert(chs, k) end
+        table.sort(chs)
+        table.insert(parts, "Ch≠ " .. table.concat(chs, ", "))
     end
     return #parts > 0 and table.concat(parts, "; ") or ""
 end
@@ -877,7 +1292,34 @@ end
         left_icon_tap_callback = function() self:showMainMenu() end,
         show_parent = self,
     }
-    
+    -- Clamp close button tap area to the title bar height to prevent overlap with the scrollbar chevron
+    if title_bar.right_button and title_bar.right_button.dimen then
+        title_bar.right_button.dimen.h = math.min(title_bar.right_button.dimen.h, title_bar:getHeight())
+    end
+
+    -- Add "open filters menu" button next to the menu button
+    if getFilterTitlebarBtn() then
+        local IconButton = require("ui/widget/iconbutton")
+        local bp = Screen:scaleBySize(5)
+        local lb_w = title_bar.left_button:getSize().w
+        local icon_size = math.floor((lb_w - bp) / 3)
+        local btn_x = bp + icon_size + Screen:scaleBySize(12)
+        title_bar.left_button.padding_right = btn_x - bp - icon_size - 1
+        title_bar.left_button:update()
+        local filter_btn = IconButton:new{
+            icon = "appbar.search",
+            width = icon_size,
+            height = icon_size,
+            padding = 0,
+            overlap_offset = { btn_x, bp },
+            callback = function()
+                self:showFilterMenu(false)
+            end,
+            show_parent = self,
+        }
+        table.insert(title_bar, filter_btn)
+    end
+
     local subtitle_widget = nil
     local subtitle_height = 0
     if filter_text ~= "" then
@@ -901,15 +1343,47 @@ end
     local page_indices = self.pages[self.current_page] or {}
     local last_note_widget = nil
     local note_spacing = getNoteSpacing()
+    local dedup_fields = getDedupInfoFields()
+    local do_hide_dup_title = getHideDupTitle()
+    local do_hide_dup_info = getHideDupInfo()
+    local always_show_first = getAlwaysShowFirstOnPage()
+    local _sb_track_center = (self.sb_x or 0) + math.floor((SB_THUMB_WIDTH - SB_TRACK_WIDTH) / 2) + math.floor(SB_TRACK_WIDTH / 2)
+    local _sb_reserve = (pag_style == "scrollbar" or pag_style == "scrollbar_chevrons") and (self.width - _sb_track_center) or 0
+    local note_width = self.width - _sb_reserve
+    -- determine dedup state from last note of previous page
+    local dedup_prev_title = nil
+    local dedup_prev_info_key = nil
+    if do_hide_dup_title or do_hide_dup_info then
+        for p = 1, self.current_page - 1 do
+            local prev_page = self.pages[p] or {}
+            if #prev_page > 0 then
+                local last_idx = prev_page[#prev_page]
+                local prev_note = self.filtered_notes[last_idx]
+                if prev_note then
+                    dedup_prev_title = prev_note.book_title
+                    dedup_prev_info_key = getNoteInfoKey(prev_note, dedup_fields)
+                end
+            end
+        end
+    end
     for i, idx in ipairs(page_indices) do
         local note = self.filtered_notes[idx]
         if note then
             if i > 1 then
                 table.insert(notes_group, VerticalSpan:new{ width = note_spacing })
             end
-            local note_widget = NoteItemWidget:new{ width = self.width, note = note, show_parent = self }
+            local is_first_on_page = (i == 1)
+            local skip_title = do_hide_dup_title
+                and not (always_show_first and is_first_on_page)
+                and (note.book_title == dedup_prev_title)
+            local skip_info = do_hide_dup_info
+                and not (always_show_first and is_first_on_page)
+                and (getNoteInfoKey(note, dedup_fields) == dedup_prev_info_key)
+            local note_widget = NoteItemWidget:new{ width = note_width, note = note, show_parent = self, skip_title = skip_title, skip_info = skip_info }
             table.insert(notes_group, note_widget)
             if i == #page_indices then last_note_widget = note_widget end
+            dedup_prev_title = note.book_title
+            dedup_prev_info_key = getNoteInfoKey(note, dedup_fields)
         end
     end
 
@@ -925,17 +1399,21 @@ end
                     if w.getSize then used_height = used_height + w:getSize().h end
                 end
                 local available_height = self.height - self.title_height - self.footer_height - used_height - 2
+                local preview_skip_title = do_hide_dup_title and (next_note.book_title == dedup_prev_title)
+                local preview_skip_info = do_hide_dup_info and (getNoteInfoKey(next_note, dedup_fields) == dedup_prev_info_key)
                 local preview_widget = NoteItemWidget:new{
-                    width = self.width,
+                    width = note_width,
                     note = next_note,
                     show_parent = self,
                     is_preview = true,
-                    disable_tap = true
+                    disable_tap = true,
+                    skip_title = preview_skip_title,
+                    skip_info = preview_skip_info,
                 }
                 local FrameContainer = require("ui/widget/container/framecontainer")
                 local AlphaContainer = require("ui/widget/container/alphacontainer")
                 local bordered_preview = FrameContainer:new{
-                    width = self.width,
+                    width = note_width,
                     height = available_height,
                     padding = 0,
                     margin = 0,
@@ -989,7 +1467,36 @@ end
     
     self.ges_events = self.ges_events or {}
     local tap_height = self.height - self.title_height - self.footer_height
-    self.ges_events.Tap = { GestureRange:new{ ges = "tap", range = Geom:new{ x = 0, y = self.title_height, w = self.width, h = tap_height } } }
+    -- In scrollbar mode, exclude the scrollbar column so taps/swipes there reach CustomScrollBar
+    local tap_width = self.width
+    if (pag_style == "scrollbar" or pag_style == "scrollbar_chevrons") and self.sb_x then
+        tap_width = self.sb_x
+    end
+    self.ges_events.Tap = { GestureRange:new{ ges = "tap", range = Geom:new{ x = 0, y = self.title_height, w = tap_width, h = tap_height } } }
+    -- Narrow swipe range so the scrollbar column isn't claimed by page-turn swipes
+    local swipe_range = Geom:new{ x = 0, y = 0, w = tap_width, h = self.height }
+    local swipe_setting = getSwipeSetting()
+    if swipe_setting ~= "disabled" then
+        if swipe_setting == "horizontal" or swipe_setting == "both" then
+            self.ges_events.SwipeWest = { GestureRange:new{ ges = "swipe", range = swipe_range, direction = "west" } }
+            self.ges_events.SwipeEast = { GestureRange:new{ ges = "swipe", range = swipe_range, direction = "east" } }
+        else
+            self.ges_events.SwipeWest = nil
+            self.ges_events.SwipeEast = nil
+        end
+        if swipe_setting == "vertical" or swipe_setting == "both" then
+            self.ges_events.SwipeNorth = { GestureRange:new{ ges = "swipe", range = swipe_range, direction = "north" } }
+            self.ges_events.SwipeSouth = { GestureRange:new{ ges = "swipe", range = swipe_range, direction = "south" } }
+        else
+            self.ges_events.SwipeNorth = nil
+            self.ges_events.SwipeSouth = nil
+        end
+    else
+        self.ges_events.SwipeWest  = nil
+        self.ges_events.SwipeEast  = nil
+        self.ges_events.SwipeNorth = nil
+        self.ges_events.SwipeSouth = nil
+    end
     
     UIManager:setDirty(self, "ui")
 end
@@ -997,7 +1504,7 @@ function NotesListWidget:showMainMenu()
     local buttons = {
         {{ text = _("Filter"), callback = function()
             UIManager:close(self.main_menu)
-            self:showFilterMenu()
+            self:showFilterMenu(true)
         end }},
         {{ text = _("Sort"), callback = function()
             UIManager:close(self.main_menu)
@@ -1014,83 +1521,50 @@ function NotesListWidget:showMainMenu()
 end
 function NotesListWidget:showSortMenu()
     local sort_mode = getSetting("sort_mode", "date_newest")
-    
-    local function getCurrentPrimarySort()
-        if sort_mode:match("^date") then return "date"
-        elseif sort_mode:match("^author") then return "author"
-        elseif sort_mode:match("^book") then return "book"
-        elseif sort_mode:match("^location") then return "location"
-        elseif sort_mode:match("^filename") then return "filename"
-        else return "date" end
+    local function check(mode) return sort_mode == mode and "\u{2713} " or "  " end
+    local function apply(mode)
+        setSetting("sort_mode", mode)
+        self:applySort()
+        self:refresh()
+        UIManager:close(self.sort_dialog)
+        self:showMainMenu()
     end
-    
-    local function getSortIndicator(primary)
-        return getCurrentPrimarySort() == primary and "✓ " or "  "
-    end
-    
-    local buttons = {
-        {{ text = getSortIndicator("date") .. _("Date"), callback = function()
-            UIManager:close(self.sort_dialog)
-            self:showSecondarySortMenu("date")
-        end }},
-        {{ text = getSortIndicator("author") .. _("Author"), callback = function()
-            UIManager:close(self.sort_dialog)
-            self:showSecondarySortMenu("author")
-        end }},
-        {{ text = getSortIndicator("book") .. _("Book"), callback = function()
-            UIManager:close(self.sort_dialog)
-            self:showSecondarySortMenu("book")
-        end }},
-        {{ text = getSortIndicator("filename") .. _("Filename"), callback = function()
-            UIManager:close(self.sort_dialog)
-            self:showSecondarySortMenu("filename")
-        end }},
-        {{ text = _("Back"), callback = function()
-            UIManager:close(self.sort_dialog)
-            self:showMainMenu()
-        end }},
+
+    local categories = {
+        { key = "date",     label = "Date" },
+        { key = "author",   label = "Author" },
+        { key = "book",     label = "Book" },
+        { key = "filename", label = "Filename" },
     }
+
+    local buttons = {}
+    for _, cat in ipairs(categories) do
+        table.insert(buttons, {})
+        table.insert(buttons, {{ text = cat.label, enabled = false }})
+        local modes = SORT_CATEGORIES[cat.key] or {}
+        local i = 1
+        while i <= #modes do
+            local row = {}
+            local m1 = modes[i]
+            if m1 and SORT_MODES[m1] then
+                table.insert(row, { text = check(m1) .. SORT_MODES[m1].label, callback = function() apply(m1) end })
+            end
+            local m2 = modes[i + 1]
+            if m2 and SORT_MODES[m2] then
+                table.insert(row, { text = check(m2) .. SORT_MODES[m2].label, callback = function() apply(m2) end })
+            end
+            if #row > 0 then table.insert(buttons, row) end
+            i = i + 2
+        end
+    end
+
+    table.insert(buttons, {{ text = _("Back"), callback = function()
+        UIManager:close(self.sort_dialog)
+        self:showMainMenu()
+    end }})
+
     self.sort_dialog = ButtonDialogTitle:new{ title = _("Sort By"), buttons = buttons }
     UIManager:show(self.sort_dialog)
-end
-
-function NotesListWidget:showSecondarySortMenu(primary)
-    local sort_mode = getSetting("sort_mode", "date_newest")
-    
-    local function getSecondaryIndicator(mode)
-        return sort_mode == mode and "✓ " or "  "
-    end
-    
-    local function createSortCallback(mode)
-        return function()
-            setSetting("sort_mode", mode)
-            self:applySort()
-            self:refresh()
-            UIManager:close(self.secondary_sort_dialog)
-            self:showMainMenu()
-        end
-    end
-    
-    local buttons = {}
-    local sort_modes = SORT_CATEGORIES[primary] or {}
-    
-    for _, mode in ipairs(sort_modes) do
-        local mode_info = SORT_MODES[mode]
-        if mode_info then
-            table.insert(buttons, {{
-                text = getSecondaryIndicator(mode) .. mode_info.label,
-                callback = createSortCallback(mode)
-            }})
-        end
-    end
-    
-    table.insert(buttons, {{ text = _("Back"), callback = function()
-        UIManager:close(self.secondary_sort_dialog)
-        self:showSortMenu()
-    end }})
-    
-    self.secondary_sort_dialog = ButtonDialogTitle:new{ title = _("Sort Direction"), buttons = buttons }
-    UIManager:show(self.secondary_sort_dialog)
 end
 function NotesListWidget:showSpinMenu(menu_key, parent_callback)
     local menu_config = SPIN_MENUS[menu_key]
@@ -1137,33 +1611,94 @@ function NotesListWidget:showSettingsMenu()
             self:showSettingsMenu()
         end
     end
-    
-    local justify_text = getJustify() == true and "On" or "Off"
-    local show_total_text = getShowTotalNotes() == true and "On" or "Off"
-    
+    local function sub(fn)
+        return function()
+            UIManager:close(self.settings_dialog)
+            fn()
+        end
+    end
+
+    local function onoff(v) return v and "On" or "Off" end
+    local function check(v) return v and "\u{2713}" or "○" end
+
+    -- Info fields helpers (inline toggles, no submenu)
+    local info_active = {}
+    for f in getInfoFields():gmatch("[^,]+") do info_active[f] = true end
+    local function toggleInfoField(f)
+        UIManager:close(self.settings_dialog)
+        if info_active[f] then info_active[f] = nil else info_active[f] = true end
+        local parts = {}
+        for _, k in ipairs({"date","author","chapter"}) do if info_active[k] then table.insert(parts, k) end end
+        setSetting("info_fields", #parts > 0 and table.concat(parts,",") or "date")
+        self:refresh(); self:showSettingsMenu()
+    end
+    local dedup_active = {}
+    for f in getDedupInfoFields():gmatch("[^,]+") do dedup_active[f] = true end
+    local function toggleDedupField(f)
+        UIManager:close(self.settings_dialog)
+        if dedup_active[f] then dedup_active[f] = nil else dedup_active[f] = true end
+        local parts = {}
+        for _, k in ipairs({"date","author","chapter"}) do if dedup_active[k] then table.insert(parts, k) end end
+        setSetting("dedup_info_fields", #parts > 0 and table.concat(parts,",") or "date")
+        self:refresh(); self:showSettingsMenu()
+    end
+
     local buttons = {
-        {{ text = _("Font Sizes..."), callback = function()
-            UIManager:close(self.settings_dialog)
-            self:showSpinMenu("font_size", function() self:showSettingsMenu() end)
-        end }},
-        {{ text = _("Fonts..."), callback = function()
-            UIManager:close(self.settings_dialog)
-            self:showFontsMenu()
-        end }},
-        {{ text = _("Section Margins..."), callback = function()
-            UIManager:close(self.settings_dialog)
-            self:showSpinMenu("section_margin", function() self:showSettingsMenu() end)
-        end }},
-        {{ text = _("Margins..."), callback = function()
-            UIManager:close(self.settings_dialog)
-            self:showSpinMenu("margins", function() self:showSettingsMenu() end)
-        end }},
-        {{ text = _("Truncate Lines: ") .. getTruncateLines(), callback = function()
-            UIManager:close(self.settings_dialog)
-            self:showSpinSetting(_("Truncate Lines"), "truncate_lines", DEFAULT_TRUNCATE_LINES, 1, 20, 1, function() self:showSettingsMenu() end)
-        end }},
-        {{ text = _("Justify Text: ") .. justify_text, callback = makeToggleSetting("justify", getJustify) }},
-        {{ text = _("Show Total: ") .. show_total_text, callback = makeToggleSetting("show_total", getShowTotalNotes) }},
+        -- Section: Appearance
+        {},
+        {{ text = _("Appearance"), enabled = false }},
+        {
+            { text = _("Font Sizes..."),     callback = sub(function() self:showSpinMenu("font_size",      function() self:showSettingsMenu() end) end) },
+            { text = _("Typefaces..."),      callback = sub(function() self:showFontsMenu() end) },
+        },
+        {
+            { text = _("Page Margins..."),   callback = sub(function() self:showSpinMenu("margins",        function() self:showSettingsMenu() end) end) },
+            { text = _("Space Between Notes..."),  callback = sub(function() self:showSpinMenu("section_margin", function() self:showSettingsMenu() end) end) },
+        },
+        {
+            { text = _("Max Lines Per Highlight: ") .. getTruncateLines(), callback = sub(function()
+                self:showSpinSetting(_("Max Lines per Highlight"), "truncate_lines", DEFAULT_TRUNCATE_LINES, 1, 20, 1, function() self:showSettingsMenu() end)
+            end) },
+            { text = _("Justify Text: ") .. onoff(getJustify()), callback = makeToggleSetting("justify", getJustify) },
+        },
+        -- Section: Content
+        {},
+        {{ text = _("Content"), enabled = false }},
+        {
+            { text = _("Count in Title: ") .. onoff(getShowTotalNotes()),  callback = makeToggleSetting("show_total",           getShowTotalNotes) },
+            { text = _("Filter Button: ")        .. onoff(getFilterTitlebarBtn()),callback = makeToggleSetting("filter_titlebar_btn", getFilterTitlebarBtn) },
+        },
+        {
+            { text = _("Show Book / Info Row: ") .. onoff(getShowInfo()),              callback = makeToggleSetting("show_info",                  getShowInfo) },
+            { text = _("Show Book Title on Every Page: ") .. onoff(getAlwaysShowFirstOnPage()), callback = makeToggleSetting("always_show_first_on_page", getAlwaysShowFirstOnPage) },
+        },
+        {
+            { text = _("Hide Duplicate Book Header: ") .. onoff(getHideDupTitle()), callback = makeToggleSetting("hide_dup_title", getHideDupTitle) },
+            { text = _("Hide Duplicate Info Header: ") .. onoff(getHideDupInfo()),  callback = makeToggleSetting("hide_dup_info",  getHideDupInfo) },
+        },
+        -- Info header fields row (what shows in the book/info row)
+        {},
+        {{ text = _("Info Row Fields"), enabled = false }},
+        {
+            { text = check(info_active["date"])    .. " Date",    callback = function() toggleInfoField("date")    end },
+            { text = check(info_active["author"])  .. " Author",  callback = function() toggleInfoField("author")  end },
+            { text = check(info_active["chapter"]) .. " Chapter", callback = function() toggleInfoField("chapter") end },
+        },
+        -- Dedup match fields row (which fields count as "duplicate info")
+        {},
+        {{ text = _("Duplicate Info Check Fields"), enabled = false }},
+        {
+            { text = check(dedup_active["date"])    .. " Date",    callback = function() toggleDedupField("date")    end },
+            { text = check(dedup_active["author"])  .. " Author",  callback = function() toggleDedupField("author")  end },
+            { text = check(dedup_active["chapter"]) .. " Chapter", callback = function() toggleDedupField("chapter") end },
+        },
+        -- Section: Navigation
+        {},
+        {{ text = _("Navigation"), enabled = false }},
+        {
+            { text = _("Pagination Style..."), callback = sub(function() self:showPaginationStyleMenu() end) },
+            { text = _("Swipe Gestures..."),  callback = sub(function() self:showSwipeSettingMenu() end) },
+        },
         {{ text = _("Back"), callback = function()
             UIManager:close(self.settings_dialog)
             self:showMainMenu()
@@ -1171,6 +1706,119 @@ function NotesListWidget:showSettingsMenu()
     }
     self.settings_dialog = ButtonDialogTitle:new{ title = _("Settings"), buttons = buttons }
     UIManager:show(self.settings_dialog)
+end
+function NotesListWidget:showPaginationStyleMenu()
+    local current = getPaginationStyle()
+    local function check(v) return current == v and "\u{2713} " or "  " end
+    local function apply(v)
+        setSetting("pagination_style", v)
+        UIManager:close(self.pagination_style_dialog)
+        self:refresh()
+        self:showSettingsMenu()
+    end
+    local buttons = {
+        {{ text = check("right")   .. _("Project Title - Right"), callback = function() apply("right")   end }},
+        {{ text = check("left")      .. _("Project Title - Left"),  callback = function() apply("left")      end }},
+        {{ text = check("default")   .. _("Default"),         callback = function() apply("default")   end }},
+        {{ text = check("scrollbar") .. _("Scrollbar"),                           callback = function() apply("scrollbar") end }},
+        {{ text = check("scrollbar_chevrons") .. _("Scrollbar + Buttons"),        callback = function() apply("scrollbar_chevrons") end }},
+        {{ text = _("Back"), callback = function()
+            UIManager:close(self.pagination_style_dialog)
+            self:showSettingsMenu()
+        end }},
+    }
+    self.pagination_style_dialog = ButtonDialogTitle:new{ title = _("Pagination Style"), buttons = buttons }
+    UIManager:show(self.pagination_style_dialog)
+end
+function NotesListWidget:showSwipeSettingMenu()
+    local current = getSwipeSetting()
+    local function check(v) return current == v and "\u{2713} " or "  " end
+    local function apply(v)
+        setSetting("swipe_direction", v)
+        UIManager:close(self.swipe_dialog)
+        self:refresh()
+        self:showSettingsMenu()
+    end
+    local buttons = {
+        {{ text = check("both")       .. _("Both (horizontal + vertical)"), callback = function() apply("both")       end }},
+        {{ text = check("horizontal") .. _("Horizontal only"),              callback = function() apply("horizontal") end }},
+        {{ text = check("vertical")   .. _("Vertical only"),                callback = function() apply("vertical")   end }},
+        {{ text = check("disabled")   .. _("Disabled"),                     callback = function() apply("disabled")   end }},
+        {{ text = _("Back"), callback = function()
+            UIManager:close(self.swipe_dialog)
+            self:showSettingsMenu()
+        end }},
+    }
+    self.swipe_dialog = ButtonDialogTitle:new{ title = _("Swipe Gestures"), buttons = buttons }
+    UIManager:show(self.swipe_dialog)
+end
+function NotesListWidget:showInfoFieldsMenu()
+    local fields_setting = getInfoFields()
+    local active = {}
+    for f in fields_setting:gmatch("[^,]+") do active[f] = true end
+
+    local function toggleField(field)
+        if active[field] then active[field] = nil else active[field] = true end
+        local parts = {}
+        for _, f in ipairs({"date", "author", "chapter"}) do
+            if active[f] then table.insert(parts, f) end
+        end
+        local new_val = #parts > 0 and table.concat(parts, ",") or "date"
+        setSetting("info_fields", new_val)
+        fields_setting = new_val
+        active = {}
+        for f in new_val:gmatch("[^,]+") do active[f] = true end
+        self:refresh()
+        UIManager:close(self.info_fields_dialog)
+        self:showInfoFieldsMenu()
+    end
+
+    local function check(field) return active[field] and "\u{2713} " or "  " end
+    local buttons = {
+        {{ text = check("date")    .. _("Date"),    callback = function() toggleField("date")    end }},
+        {{ text = check("author")  .. _("Author"),  callback = function() toggleField("author")  end }},
+        {{ text = check("chapter") .. _("Chapter"), callback = function() toggleField("chapter") end }},
+        {{ text = _("Back"), callback = function()
+            UIManager:close(self.info_fields_dialog)
+            self:showSettingsMenu()
+        end }},
+    }
+    self.info_fields_dialog = ButtonDialogTitle:new{ title = _("Show Info Header: Fields"), buttons = buttons }
+    UIManager:show(self.info_fields_dialog)
+end
+function NotesListWidget:showDedupInfoFieldsMenu()
+    local fields_setting = getDedupInfoFields()
+    local active = {}
+    for f in fields_setting:gmatch("[^,]+") do active[f] = true end
+
+    local function toggleField(field)
+        if active[field] then active[field] = nil else active[field] = true end
+        local parts = {}
+        for _, f in ipairs({"date", "author", "chapter"}) do
+            if active[f] then table.insert(parts, f) end
+        end
+        local new_val = #parts > 0 and table.concat(parts, ",") or "date"
+        setSetting("dedup_info_fields", new_val)
+        fields_setting = new_val
+        active = {}
+        for f in new_val:gmatch("[^,]+") do active[f] = true end
+        self:refresh()
+        UIManager:close(self.dedup_fields_dialog)
+        self:showDedupInfoFieldsMenu()
+    end
+
+    local function check(field) return active[field] and "✓ " or "  " end
+    local buttons = {
+        {{ text = check("date")    .. _("Date"),    callback = function() toggleField("date")    end }},
+        {{ text = check("author")  .. _("Author"),  callback = function() toggleField("author")  end }},
+        {{ text = check("chapter") .. _("Chapter"), callback = function() toggleField("chapter") end }},
+        {{ text = _("Back"), callback = function()
+            UIManager:close(self.dedup_fields_dialog)
+            self:showSettingsMenu()
+        end }},
+    }
+    self.dedup_fields_dialog = ButtonDialogTitle:new{ title = _("Hide Repeat Info: Match By"), buttons = buttons }
+    UIManager:show(self.dedup_fields_dialog)
 end
 function NotesListWidget:showFontSizeMenu()
     self:showSpinMenu("font_size", function() self:showSettingsMenu() end)
@@ -1275,7 +1923,7 @@ function NotesListWidget:showSpinSetting(title, key, default, min, max, step, ba
         end,
     })
 end
-function NotesListWidget:showFilterMenu()
+function NotesListWidget:showFilterMenu(show_back)
     local ButtonDialog = require("ui/widget/buttondialog")
     local RadioButtonWidget = require("ui/widget/radiobuttonwidget")
     
@@ -1284,73 +1932,116 @@ function NotesListWidget:showFilterMenu()
             self.active_filter = {}
         end
     end
-    
-    local function makeToggleFunction(category, items_table, item_value)
-        return function()
-            ensureFilter()
-            if not self.active_filter[category] then self.active_filter[category] = {} end
-            if self.active_filter[category][item_value] then
-                self.active_filter[category][item_value] = nil
-            else
-                self.active_filter[category][item_value] = true
-            end
-        end
-    end
-    
-    local function showToggleFilter(config)
+
+    local showFilterMenu  -- forward reference
+
+    local function showToggleFilter(config, restore_offset)
         local data = config.collector(self.notes_list)
         local keys = {}
         for key in pairs(data) do table.insert(keys, key) end
         table.sort(keys)
-        
-        local current_selections = self.active_filter and self.active_filter[config.filter_key] or {}
-        local dialog
-        
-        local function toggle_and_refresh(key)
-            makeToggleFunction(config.filter_key, data, key)()
-            UIManager:close(dialog)
-            showToggleFilter(config)
+
+        local function getState(key)
+            local inc = (self.active_filter and self.active_filter[config.filter_key]) or {}
+            local exc = (self.active_filter and self.active_filter[config.exclude_filter_key]) or {}
+            if inc[key] then return "include"
+            elseif exc[key] then return "exclude"
+            else return "none" end
         end
-        
+
+        local function cycleState(key)
+            ensureFilter()
+            local inc = self.active_filter[config.filter_key] or {}
+            local exc = self.active_filter[config.exclude_filter_key] or {}
+            local state = getState(key)
+            if state == "none" then
+                inc[key] = true
+            elseif state == "include" then
+                inc[key] = nil
+                exc[key] = true
+            else
+                exc[key] = nil
+            end
+            self.active_filter[config.filter_key] = next(inc) and inc or nil
+            self.active_filter[config.exclude_filter_key] = next(exc) and exc or nil
+        end
+
+        local dialog
         local buttons = {}
+
+        -- Determine column count
+        local ncols
+        if config.columns == "auto" then
+            ncols = #keys > 20 and 3 or #keys > 10 and 2 or 1
+        elseif config.columns == "auto2" then
+            ncols = #keys > 10 and 2 or 1
+        else
+            ncols = config.columns or 1
+        end
+
+        -- Build item button definitions first, then pack into rows
+        local item_btns = {}
         for _, key in ipairs(keys) do
-            local checked = current_selections and current_selections[key] or false
-            local mark = checked and "[x] " or "[ ] "
+            local state = getState(key)
+            local mark = state == "include" and "[+] " or state == "exclude" and "[-] " or "[ ] "
             local display_text = config.formatter(key, data[key])
-            table.insert(buttons, {
-                { text = mark .. display_text, callback = function() toggle_and_refresh(key) end },
+            local k = key
+            table.insert(item_btns, {
+                text = mark .. display_text,
+                callback = function()
+                    local offset = dialog:getScrolledOffset()
+                    cycleState(k)
+                    UIManager:close(dialog)
+                    showToggleFilter(config, offset)
+                end,
             })
         end
-        
+        local i = 1
+        while i <= #item_btns do
+            local row = {}
+            for c = 1, ncols do
+                if item_btns[i] then
+                    table.insert(row, item_btns[i])
+                    i = i + 1
+                end
+            end
+            table.insert(buttons, row)
+        end
         table.insert(buttons, {
             { text = _(config.apply_label), callback = function()
                 UIManager:close(dialog)
                 self:refresh()
+                showFilterMenu(show_back)
             end },
         })
         table.insert(buttons, {
             { text = _(config.clear_label), callback = function()
                 ensureFilter()
                 self.active_filter[config.filter_key] = nil
+                self.active_filter[config.exclude_filter_key] = nil
                 UIManager:close(dialog)
                 self:refresh()
+                showFilterMenu(show_back)
             end },
         })
-        
         dialog = ButtonDialog:new{
             title = _(config.dialog_title),
             buttons = buttons,
             width_factor = 0.7,
         }
         UIManager:show(dialog)
+        if restore_offset then
+            dialog:setScrolledOffset(restore_offset)
+        end
     end
     
     local FILTER_CONFIGS = {
         book = {
             filter_key = "books",
+            exclude_filter_key = "books_exclude",
             dialog_title = "Filter by Book",
             apply_label = "Apply Book Filter",
-            clear_label = "Clear Book Filter",
+            columns = "auto2",
             collector = function(notes_list)
                 local books = {}
                 for _, note in ipairs(notes_list) do
@@ -1374,23 +2065,61 @@ function NotesListWidget:showFilterMenu()
         },
         tags = {
             filter_key = "tags",
+            exclude_filter_key = "tags_exclude",
             dialog_title = "Filter by Tags",
             apply_label = "Apply Tags Filter",
             clear_label = "Clear Tags Filter",
+            columns = "auto",
             collector = function(notes_list)
                 local tags = {}
+                local book_filter = self.active_filter and self.active_filter.books
                 for _, note in ipairs(notes_list) do
-                    local note_wrapper = NoteWrapper:new(note)
-                    local note_tags = note_wrapper:getTags()
-                    for _, tag in ipairs(note_tags) do
-                        if tag ~= "" then tags[tag] = true end
+                    if not book_filter or not next(book_filter) or book_filter[note.book_title] then
+                        local note_wrapper = NoteWrapper:new(note)
+                        local note_tags = note_wrapper:getTags()
+                        for _, tag in ipairs(note_tags) do
+                            if tag ~= "" then tags[tag] = true end
+                        end
                     end
                 end
                 return tags
             end,
             formatter = function(tag, _) return tag end,
         },
+        chapter = {
+            filter_key = "chapters",
+            exclude_filter_key = "chapters_exclude",
+            dialog_title = "Filter by Chapter",
+            apply_label = "Apply Chapter Filter",
+            columns = "auto2",
+            collector = function(notes_list)
+                local chapters = {}
+                local book_filter = self.active_filter and self.active_filter.books
+                for _, note in ipairs(notes_list) do
+                    if not book_filter or not next(book_filter) or book_filter[note.book_title] then
+                        if note.chapter and note.chapter ~= "" then
+                            chapters[note.chapter] = true
+                        end
+                    end
+                end
+                return chapters
+            end,
+            formatter = function(ch, _) return ch end,
+        },
     }
+
+    -- Single-book context: launched from the reader (current book only),
+    -- or the book filter is narrowed to exactly one book.
+    local function isSingleBookContext()
+        if self.single_book then return true end
+        local book_filter = self.active_filter and self.active_filter.books
+        if book_filter and next(book_filter) then
+            local count = 0
+            for _ in pairs(book_filter) do count = count + 1 end
+            if count == 1 then return true end
+        end
+        return false
+    end
     
     local function showBookFilter()
         showToggleFilter(FILTER_CONFIGS.book)
@@ -1400,7 +2129,9 @@ function NotesListWidget:showFilterMenu()
         showToggleFilter(FILTER_CONFIGS.tags)
     end
 
-    local function showColorStyleFilter()
+    local function showColorStyleFilter(is_exclude)
+        local type_key  = is_exclude and "type_exclude"  or "type"
+        local value_key = is_exclude and "value_exclude" or "value"
         local colors, styles = {}, {}
         for _, note in ipairs(self.notes_list) do
             local note_wrapper = NoteWrapper:new(note)
@@ -1409,8 +2140,8 @@ function NotesListWidget:showFilterMenu()
             local drawer = note_wrapper:getNormalizedDrawer()
             if drawer then styles[drawer] = true end
         end
-        local curr_type = self.active_filter and self.active_filter.type or nil
-        local curr_val = self.active_filter and self.active_filter.value or nil
+        local curr_type = self.active_filter and self.active_filter[type_key] or nil
+        local curr_val  = self.active_filter and self.active_filter[value_key] or nil
         local radio_buttons = {}
         for style, _ in pairs(styles) do
             local name = style:sub(1,1):upper() .. style:sub(2)
@@ -1446,52 +2177,255 @@ function NotesListWidget:showFilterMenu()
             { text = _( "Clear Filter" ), checked = curr_type == nil, provider = nil },
         })
         UIManager:show(RadioButtonWidget:new{
-            title_text = _( "Filter by Color/Style" ),
+            title_text = is_exclude and _("Exclude Color/Style") or _("Filter by Color/Style"),
             width_factor = 0.6,
             radio_buttons = radio_buttons,
             callback = function(radio)
                 self.active_filter = self.active_filter or {}
+                -- clear the opposite side so only one is ever active
+                local opp_type  = is_exclude and "type"  or "type_exclude"
+                local opp_value = is_exclude and "value" or "value_exclude"
+                self.active_filter[opp_type]  = nil
+                self.active_filter[opp_value] = nil
                 if radio.provider then
-                    self.active_filter.type = radio.provider.type
-                    self.active_filter.value = radio.provider.value
+                    self.active_filter[type_key]  = radio.provider.type
+                    self.active_filter[value_key] = radio.provider.value
                 else
-                    self.active_filter.type = nil
-                    self.active_filter.value = nil
+                    self.active_filter[type_key]  = nil
+                    self.active_filter[value_key] = nil
                 end
                 self:refresh()
+                showFilterMenu(show_back)
             end,
             colorful = true,
             dithered = true,
         })
     end
 
-    local main_buttons = {
-        {{ text = _("Filter by Book"), callback = function()
-            showBookFilter()
-        end }},
-        {{ text = _("Filter by Tags"), callback = function()
-            showTagsFilter()
-        end }},
-        {{ text = _("Filter by Color/Style"), callback = function()
-            showColorStyleFilter()
-        end }},
-        {{ text = _("Clear All Filters"), callback = function()
-            self.active_filter = {}
-            self:refresh()
-        end }},
-        {{ text = _("Back"), callback = function()
-            if self.filter_dialog then
-                UIManager:close(self.filter_dialog)
+    local function showTextSearchFilter(field_key, dialog_title, hint, is_exclude)
+        local InputDialog = require("ui/widget/inputdialog")
+        local actual_key = is_exclude and (field_key .. "_exclude") or field_key
+        local mode_key = actual_key .. "_mode"
+        local case_key = actual_key .. "_case"
+        local init_query = (self.active_filter and self.active_filter[actual_key]) or ""
+        local init_mode  = (self.active_filter and self.active_filter[mode_key]) or "all"
+        local init_case  = (self.active_filter and self.active_filter[case_key]) or false
+        local dialog_mode = init_mode
+        local dialog_case = init_case
+        local input_dialog
+        local function rebuildDialog(saved_query)
+            if input_dialog then UIManager:close(input_dialog) end
+            local function modeBtn(label, m)
+                return {
+                    text = (dialog_mode == m and "✓ " or "") .. label,
+                    callback = function()
+                        local q = input_dialog:getInputText()
+                        dialog_mode = m
+                        rebuildDialog(q)
+                    end,
+                }
             end
-            self:showMainMenu()
-        end }},
-    }
-    self.filter_dialog = ButtonDialog:new{
-        title = _("Annotation Filters"),
-        buttons = main_buttons,
-        width_factor = 0.7,
-    }
-    UIManager:show(self.filter_dialog)
+            input_dialog = InputDialog:new{
+                title = _(dialog_title),
+                input = saved_query,
+                input_hint = hint,
+                buttons = {
+                    {
+                        modeBtn(_("All Words"), "all"),
+                        modeBtn(_("Any Word"), "any"),
+                        modeBtn(_("Exact Phrase"), "phrase"),
+                    },
+                    {
+                        {
+                            text = dialog_case and _("Case-Sensitive: On") or _("Case-Sensitive: Off"),
+                            callback = function()
+                                local q = input_dialog:getInputText()
+                                dialog_case = not dialog_case
+                                rebuildDialog(q)
+                            end,
+                        },
+                    },
+                    {
+                        { text = _("Cancel"), callback = function() UIManager:close(input_dialog) end },
+                        { text = _("Clear"), callback = function()
+                            UIManager:close(input_dialog)
+                            if self.active_filter then
+                                self.active_filter[actual_key] = nil
+                                self.active_filter[mode_key]   = nil
+                                self.active_filter[case_key]   = nil
+                            end
+                            self:refresh()
+                            showFilterMenu(show_back)
+                        end },
+                        { text = is_exclude and _("Exclude") or _("Search"), is_enter_default = true, callback = function()
+                            local q = input_dialog:getInputText()
+                            UIManager:close(input_dialog)
+                            ensureFilter()
+                            self.active_filter[actual_key] = q ~= "" and q or nil
+                            self.active_filter[mode_key]   = dialog_mode
+                            self.active_filter[case_key]   = dialog_case
+                            self:refresh()
+                            showFilterMenu(show_back)
+                        end },
+                    },
+                },
+            }
+            UIManager:show(input_dialog)
+            input_dialog:onShowKeyboard()
+        end
+        rebuildDialog(init_query)
+    end
+
+    -- cs_exclude tracks whether the Color/Style row acts as Filter or Exclude
+    -- initialise to exclude if an exclude is already active but no include is
+    local cs_exclude = false
+    if self.active_filter then
+        local has_inc = self.active_filter.type ~= nil
+        local has_exc = self.active_filter.type_exclude ~= nil
+        if has_exc and not has_inc then cs_exclude = true end
+    end
+
+    local function isActive(keys)
+        if not self.active_filter then return false end
+        for _, k in ipairs(keys) do
+            local v = self.active_filter[k]
+            if type(v) == "table" and next(v) then return true end
+            if type(v) == "string" and v ~= "" then return true end
+        end
+        return false
+    end
+
+    local function mark(keys, label)
+        return (isActive(keys) and "✓ " or "") .. label
+    end
+
+    showFilterMenu = function(show_back)
+        if self.filter_dialog then UIManager:close(self.filter_dialog) end
+        local af = self.active_filter or {}
+        local main_buttons = {}
+
+        -- Group 1: Scope
+        if not self.single_book then
+            table.insert(main_buttons, {
+                { text = mark({"books","books_exclude"}, _("Filter by Book")), callback = function()
+                    showBookFilter()
+                end },
+            })
+        end
+        if isSingleBookContext() then
+            table.insert(main_buttons, {
+                { text = mark({"chapters","chapters_exclude"}, _("Filter by Chapter")), callback = function()
+                    UIManager:close(self.filter_dialog)
+                    showToggleFilter(FILTER_CONFIGS.chapter)
+                end },
+            })
+        end
+        table.insert(main_buttons, {
+            { text = mark({"tags","tags_exclude"}, _("Filter by Tags")), callback = function()
+                showTagsFilter()
+            end },
+        })
+
+        -- Group 2: Color / Style
+        table.insert(main_buttons, {})
+        local cs_action_label = cs_exclude and _("Exclude Color/Style") or _("Filter by Color/Style")
+        local cs_active = isActive({"type","value","type_exclude","value_exclude"})
+        local cs_toggle_label = cs_exclude and _("Mode: Exclude") or _("Mode: Filter")
+        table.insert(main_buttons, {
+            { text = (cs_active and "\u{2713} " or "") .. cs_action_label, callback = function()
+                showColorStyleFilter(cs_exclude)
+            end },
+            { text = cs_toggle_label, callback = function()
+                cs_exclude = not cs_exclude
+                ensureFilter()
+                if cs_exclude then
+                    self.active_filter.type  = nil
+                    self.active_filter.value = nil
+                else
+                    self.active_filter.type_exclude  = nil
+                    self.active_filter.value_exclude = nil
+                end
+                self:refresh()
+                showFilterMenu(show_back)
+            end },
+        })
+
+        -- Group 3: Text search
+        table.insert(main_buttons, {})
+        table.insert(main_buttons, {
+            { text = mark({"search_highlight"}, _("Filter by Highlight Text")), callback = function()
+                UIManager:close(self.filter_dialog)
+                showTextSearchFilter("search_highlight", "Filter by Highlight Text", _("Words in highlighted text…"), false)
+            end },
+            { text = mark({"search_highlight_exclude"}, _("Exclude by Highlight Text")), callback = function()
+                UIManager:close(self.filter_dialog)
+                showTextSearchFilter("search_highlight", "Exclude Highlight Text", _("Words to hide highlighted text…"), true)
+            end },
+        })
+        table.insert(main_buttons, {
+            { text = mark({"search_note"}, _("Filter by Note Text")), callback = function()
+                UIManager:close(self.filter_dialog)
+                showTextSearchFilter("search_note", "Filter by Note Text", _("Words in annotation notes…"), false)
+            end },
+            { text = mark({"search_note_exclude"}, _("Exclude by Note Text")), callback = function()
+                UIManager:close(self.filter_dialog)
+                showTextSearchFilter("search_note", "Exclude Note Text", _("Words to hide annotation notes…"), true)
+            end },
+        })
+
+        -- Group 4: Notes presence (3-state cycle)
+        table.insert(main_buttons, {})
+        local np = af.notes_presence
+        local np_label
+        if np == "only" then
+            np_label = "\u{2713} With Notes Only"
+        elseif np == "exclude" then
+            np_label = "\u{2713} Highlights Only (no notes)"
+        else
+            np_label = "Notes: All"
+        end
+        table.insert(main_buttons, {
+            { text = np_label, callback = function()
+                ensureFilter()
+                if np == nil then
+                    self.active_filter.notes_presence = "only"
+                elseif np == "only" then
+                    self.active_filter.notes_presence = "exclude"
+                else
+                    self.active_filter.notes_presence = nil
+                end
+                self:refresh()
+                showFilterMenu(show_back)
+            end },
+        })
+
+        -- Group 5: Clear / Back
+        table.insert(main_buttons, {})
+        table.insert(main_buttons, {
+            { text = _("Clear All Filters"), callback = function()
+                self.active_filter = {}
+                cs_exclude = false
+                self:refresh()
+                showFilterMenu(show_back)
+            end },
+        })
+        if show_back then
+            table.insert(main_buttons, {
+                { text = _("Back"), callback = function()
+                    if self.filter_dialog then UIManager:close(self.filter_dialog) end
+                    self:showMainMenu()
+                end },
+            })
+        end
+
+        self.filter_dialog = ButtonDialog:new{
+            title = _("Annotation Filters"),
+            buttons = main_buttons,
+            width_factor = 0.7,
+        }
+        UIManager:show(self.filter_dialog)
+    end
+    showFilterMenu(show_back)
 end
 function NotesListWidget:refresh()
     self.content_height = self.height - self.title_height - self.footer_height - getTopPadding()
@@ -1519,44 +2453,208 @@ function NotesListWidget:onGotoPrevPage()
     self:updatePage()
     return true
 end
-function NotesListWidget:onSwipe(_, ges)
-    if ges.direction == "west" then return self:onGotoNextPage()
-    elseif ges.direction == "north" then return self:onGotoNextPage()
-    elseif ges.direction == "east" then return self:onGotoPrevPage()
-    elseif ges.direction == "south" then return self:onGotoPrevPage()
+function NotesListWidget:onSwipeWest()  return self:onGotoNextPage() end
+function NotesListWidget:onSwipeNorth() return self:onGotoNextPage() end
+function NotesListWidget:onSwipeEast()  return self:onGotoPrevPage() end
+function NotesListWidget:onSwipeSouth() return self:onGotoPrevPage() end
+-- Forward an unhandled gesture to the KOReader gestures plugin by directly
+-- resolving the canonical gesture name and calling gestureAction(). This
+-- bypasses the event-stack limitation where UIManager only propagates events
+-- to is_always_active widgets after the top widget.
+local function _forwardGestureToPlugin(ges_event)
+    local g
+    local ReaderUI = require("apps/reader/readerui")
+    if ReaderUI.instance then g = ReaderUI.instance.gestures end
+    if not g then
+        local FileManager = require("apps/filemanager/filemanager")
+        if FileManager.instance then g = FileManager.instance.gestures end
     end
+    if not g then return end
+
+    local sw  = Screen:getWidth()
+    local sh  = Screen:getHeight()
+    local pos = ges_event.pos
+    if not pos then return end
+    local x, y = pos.x, pos.y
+    local gt  = ges_event.ges
+    local dir = ges_event.direction
+
+    local function readZone(key)
+        local d = G_defaults:readSetting(key)
+        if not d then return nil end
+        return { ratio_x = d.x, ratio_y = d.y, ratio_w = d.w, ratio_h = d.h }
+    end
+    local function inZone(z)
+        if not z then return false end
+        return x >= z.ratio_x * sw and x < (z.ratio_x + z.ratio_w) * sw
+           and y >= z.ratio_y * sh and y < (z.ratio_y + z.ratio_h) * sh
+    end
+
+    local candidates = {}
+
+    if gt == "swipe" then
+        local is_diag = dir == "northeast" or dir == "northwest"
+                     or dir == "southeast" or dir == "southwest"
+        if is_diag then
+            if ges_event.distance and ges_event.distance <= Screen:scaleBySize(300) then
+                candidates[#candidates+1] = "short_diagonal_swipe"
+            end
+        else
+            local le = readZone("DSWIPE_ZONE_LEFT_EDGE")
+            local re = readZone("DSWIPE_ZONE_RIGHT_EDGE")
+            local te = readZone("DSWIPE_ZONE_TOP_EDGE")
+            local be = readZone("DSWIPE_ZONE_BOTTOM_EDGE")
+            if inZone(le) then
+                if dir == "south" then candidates[#candidates+1] = "one_finger_swipe_left_edge_down"
+                elseif dir == "north" then candidates[#candidates+1] = "one_finger_swipe_left_edge_up" end
+            elseif inZone(re) then
+                if dir == "south" then candidates[#candidates+1] = "one_finger_swipe_right_edge_down"
+                elseif dir == "north" then candidates[#candidates+1] = "one_finger_swipe_right_edge_up" end
+            elseif inZone(te) then
+                if dir == "east" then candidates[#candidates+1] = "one_finger_swipe_top_edge_right"
+                elseif dir == "west" then candidates[#candidates+1] = "one_finger_swipe_top_edge_left" end
+            elseif inZone(be) then
+                if dir == "east" then candidates[#candidates+1] = "one_finger_swipe_bottom_edge_right"
+                elseif dir == "west" then candidates[#candidates+1] = "one_finger_swipe_bottom_edge_left" end
+            end
+        end
+    elseif gt == "two_finger_swipe" then
+        local map = {
+            east="two_finger_swipe_east", west="two_finger_swipe_west",
+            north="two_finger_swipe_north", south="two_finger_swipe_south",
+            northeast="two_finger_swipe_northeast", northwest="two_finger_swipe_northwest",
+            southeast="two_finger_swipe_southeast", southwest="two_finger_swipe_southwest",
+        }
+        if map[dir] then candidates[#candidates+1] = map[dir] end
+    elseif gt == "multiswipe" then
+        local orig = UIManager.sendEvent
+        UIManager.sendEvent = function(um, ev) return UIManager:broadcastEvent(ev) end
+        pcall(g.multiswipeAction, g, ges_event.multiswipe_directions, ges_event)
+        UIManager.sendEvent = orig
+        return true
+    elseif gt == "spread" then candidates[#candidates+1] = "spread_gesture"
+    elseif gt == "pinch"  then candidates[#candidates+1] = "pinch_gesture"
+    elseif gt == "rotate" then
+        if dir == "cw"  then candidates[#candidates+1] = "rotate_cw"
+        elseif dir == "ccw" then candidates[#candidates+1] = "rotate_ccw" end
+    end
+
+    if #candidates == 0 then return end
+
+    local ges_name = candidates[1]
+    for _, name in ipairs(candidates) do
+        if g.gestures and g.gestures[name] ~= nil then ges_name = name; break end
+    end
+
+    local orig = UIManager.sendEvent
+    UIManager.sendEvent = function(um, ev) return UIManager:broadcastEvent(ev) end
+    pcall(g.gestureAction, g, ges_name, ges_event)
+    UIManager.sendEvent = orig
+    return true
+end
+
+function NotesListWidget:onGesture(ev)
+    -- Let InputContainer handle registered ges_events / touch zones first
+    local InputContainer = require("ui/widget/container/inputcontainer")
+    if InputContainer.onGesture(self, ev) then return true end
+    return _forwardGestureToPlugin(ev)
 end
 function NotesListWidget:onTap(_, ges)
     if not ges or not ges.pos then return end
-    
+    -- exclude scrollbar column
+    local pag_style = getPaginationStyle()
+    if (pag_style == "scrollbar" or pag_style == "scrollbar_chevrons") and self.sb_x and ges.pos.x >= self.sb_x then
+        return
+    end
     local tap_y = ges.pos.y
     if tap_y < self.title_height then
         return
     end
-    
+
+    -- Compute the same note_width as the render loop
+    local _sb_track_center = (self.sb_x or 0) + math.floor((SB_THUMB_WIDTH - SB_TRACK_WIDTH) / 2) + math.floor(SB_TRACK_WIDTH / 2)
+    local _sb_reserve = (pag_style == "scrollbar" or pag_style == "scrollbar_chevrons") and (self.width - _sb_track_center) or 0
+    local note_width = self.width - _sb_reserve
+
+    -- Compute subtitle height (same as render)
+    local subtitle_height = 0
+    if self.active_filter then
+        local has_filter = (
+            (self.active_filter.value and (self.active_filter.type == "color" or self.active_filter.type == "style")) or
+            (self.active_filter.value_exclude and (self.active_filter.type_exclude == "color" or self.active_filter.type_exclude == "style")) or
+            (self.active_filter.books and next(self.active_filter.books)) or
+            (self.active_filter.books_exclude and next(self.active_filter.books_exclude)) or
+            (self.active_filter.tags and next(self.active_filter.tags)) or
+            (self.active_filter.tags_exclude and next(self.active_filter.tags_exclude)) or
+            (self.active_filter.search_highlight and self.active_filter.search_highlight ~= "") or
+            (self.active_filter.search_highlight_exclude and self.active_filter.search_highlight_exclude ~= "") or
+            (self.active_filter.search_note and self.active_filter.search_note ~= "") or
+            (self.active_filter.search_note_exclude and self.active_filter.search_note_exclude ~= "") or
+            (self.active_filter.chapters and next(self.active_filter.chapters)) or
+            (self.active_filter.chapters_exclude and next(self.active_filter.chapters_exclude))
+        )
+        if has_filter then
+            local TextWidget = require("ui/widget/textwidget")
+            local Font = require("ui/font")
+            local sw = TextWidget:new{ text = "[filter]", face = Font:getFace("cfont", 14) }
+            subtitle_height = sw:getSize().h
+            sw:free()
+        end
+    end
+
+    -- Replicate dedup state from previous page
+    local dedup_fields = getDedupInfoFields()
+    local do_hide_dup_title = getHideDupTitle()
+    local do_hide_dup_info = getHideDupInfo()
+    local always_show_first = getAlwaysShowFirstOnPage()
+    local dedup_prev_title = nil
+    local dedup_prev_info_key = nil
+    if do_hide_dup_title or do_hide_dup_info then
+        for p = 1, self.current_page - 1 do
+            local prev_page = self.pages[p] or {}
+            if #prev_page > 0 then
+                local last_idx = prev_page[#prev_page]
+                local prev_note = self.filtered_notes[last_idx]
+                if prev_note then
+                    dedup_prev_title = prev_note.book_title
+                    dedup_prev_info_key = getNoteInfoKey(prev_note, dedup_fields)
+                end
+            end
+        end
+    end
+
     -- Find which note was tapped based on Y coordinate
-    local current_y = self.title_height + getTopPadding()
+    local current_y = self.title_height + subtitle_height + getTopPadding()
     local page_indices = self.pages[self.current_page] or {}
     local note_spacing = getNoteSpacing()
-    
-    for _, idx in ipairs(page_indices) do
+
+    for i, idx in ipairs(page_indices) do
         local note = self.filtered_notes[idx]
         if note then
-            local temp_widget = NoteItemWidget:new{ width = self.width, note = note, show_parent = self }
+            local is_first_on_page = (i == 1)
+            local skip_title = do_hide_dup_title
+                and not (always_show_first and is_first_on_page)
+                and (note.book_title == dedup_prev_title)
+            local skip_info = do_hide_dup_info
+                and not (always_show_first and is_first_on_page)
+                and (getNoteInfoKey(note, dedup_fields) == dedup_prev_info_key)
+            local temp_widget = NoteItemWidget:new{ width = note_width, note = note, show_parent = self, skip_title = skip_title, skip_info = skip_info }
             local note_height = temp_widget.dimen.h
             temp_widget:free()
-            
+
             local note_y_end = current_y + note_height
-            
+
             if tap_y >= current_y and tap_y < note_y_end then
                 self:onNoteSelected(note)
                 return true
             end
-            
+
+            dedup_prev_title = note.book_title
+            dedup_prev_info_key = getNoteInfoKey(note, dedup_fields)
             current_y = note_y_end + note_spacing
         end
     end
-    
+
     return false
 end
 function NotesListWidget:onNoteSelected(note)
@@ -1565,6 +2663,24 @@ function NotesListWidget:onNoteSelected(note)
     end
 end
 function NotesListWidget:onClose() UIManager:close(self) return true end
+
+-- Module-level caches: survive across plugin open/close within the same KOReader session.
+local _annotation_cache = {}  -- [book_path] = { data = {...}, mtime = N }
+local _book_info_cache   = {}  -- [book_path] = { data = {...}, mtime = N }
+local function getSidecarMtime(book_path)
+    local ok, sidecar = pcall(function() return DocSettings:findSidecarFile(book_path, true) end)
+    if not ok or not sidecar then
+        -- Fallback: KOReader < 2023 API
+        ok, sidecar = pcall(function() return DocSettings:getSidecarFile(book_path) end)
+    end
+    if sidecar then
+        local attr = lfs.attributes(sidecar, "modification")
+        if attr then return attr end
+    end
+    -- Fall back to the book file mtime itself
+    return lfs.attributes(book_path, "modification")
+end
+
 local AllNotesViewer = WidgetContainer:extend{ name = "allnotesviewer", is_doc_only = false }
 AllNotesViewer.is_doc_only = false
 function AllNotesViewer:init()
@@ -1575,23 +2691,103 @@ function AllNotesViewer:init()
         title = _("Show all annotations"),
         filemanager = true,
     })
+    Dispatcher:registerAction("show_current_book_annotations", {
+        category = "none",
+        event = "ShowCurrentBookAnnotations",
+        title = _("Show current book annotations"),
+        reader = true,
+    })
     if not self.ui.document then
+        self.ui.menu:registerToMainMenu(self)
+    else
         self.ui.menu:registerToMainMenu(self)
     end
 end
 function AllNotesViewer:onShowAllAnnotations()
     self:showAllNotes()
 end
+function AllNotesViewer:onShowCurrentBookAnnotations()
+    self:showCurrentBookNotes()
+end
+function AllNotesViewer:showCurrentBookNotes()
+    local ReaderUI = require("apps/reader/readerui")
+    local ui = self.ui or (ReaderUI and ReaderUI.instance)
+    if not ui or not ui.document then return end
+    local book_path = ui.document.file
+    if not book_path then return end
+    -- Prefer live in-memory annotations so unsaved changes are visible
+    local annotations
+    if ui.annotation and ui.annotation.annotations then
+        annotations = self:convertLiveAnnotations(ui.annotation.annotations)
+    else
+        annotations = self:loadBookAnnotations(book_path)
+    end
+    if not annotations or #annotations == 0 then
+        UIManager:show(InfoMessage:new{ text = _("No annotations found for this book.") })
+        return
+    end
+    local book_info = self:getBookInfo(book_path)
+    local book_title = book_info and book_info.title or (book_path:match("([^/\\]+)$") or book_path)
+    self:showNotesForBook(book_path, book_title, annotations)
+end
 function AllNotesViewer:addToMainMenu(menu_items)
-    menu_items.all_notes_viewer = {
-        text = _("Annotations"),
-        sorting_hint = "filemanager_settings",
-        callback = function() self:showAllNotes() end,
-    }
+    if self.ui and self.ui.document then
+        menu_items.current_book_notes_viewer = {
+            text = _("Book Annotations"),
+            sorting_hint = "navi",
+            callback = function() self:showCurrentBookNotes() end,
+        }
+    else
+        menu_items.all_notes_viewer = {
+            text = _("Annotations"),
+            sorting_hint = "filemanager_settings",
+            callback = function() self:showAllNotes() end,
+        }
+    end
+end
+function AllNotesViewer:notifyLiveReader(book_path, note)
+    local ReaderUI = require("apps/reader/readerui")
+    local live_ui = ReaderUI and ReaderUI.instance
+    if live_ui and live_ui.document and live_ui.document.file == book_path then
+        live_ui:handleEvent(Event:new("AnnotationsModified", { note }))
+    end
+end
+function AllNotesViewer:clearBookCache(book_path)
+    _annotation_cache[book_path] = nil
+    -- book_info rarely changes, but clear it too so tags/title edits are reflected
+    _book_info_cache[book_path] = nil
+end
+function AllNotesViewer:convertLiveAnnotations(live)
+    local annotations = {}
+    for _, item in ipairs(live) do
+        if item.drawer then
+            local has_highlight = item.text and item.text ~= ""
+            local has_note = item.note and item.note ~= ""
+            if has_highlight or has_note then
+                table.insert(annotations, {
+                    page = item.page or item.pageno or 0,
+                    pos0 = item.pos0, pos1 = item.pos1,
+                    chapter = item.chapter or "",
+                    text = item.text or "",
+                    notes = item.note or "",
+                    datetime = item.datetime or "",
+                    drawer = item.drawer,
+                    color = item.color or "yellow",
+                    tags = item.tags, keywords = item.keywords,
+                })
+            end
+        end
+    end
+    return annotations
 end
 function AllNotesViewer:loadBookAnnotations(book_path)
     local annotations = {}
     if not book_path then return annotations end
+    local mtime = getSidecarMtime(book_path)
+    local cached = _annotation_cache[book_path]
+    if cached and cached.mtime == mtime then
+        return cached.data
+    end
     local ok, doc_settings = pcall(DocSettings.open, DocSettings, book_path)
     if not ok or not doc_settings then return annotations end
     local data = doc_settings.data
@@ -1635,9 +2831,15 @@ function AllNotesViewer:loadBookAnnotations(book_path)
         end
     end
     table.sort(annotations, function(a, b) return (a.datetime or "") > (b.datetime or "") end)
+    _annotation_cache[book_path] = { data = annotations, mtime = mtime }
     return annotations
 end
 function AllNotesViewer:getBookInfo(book_path)
+    local mtime = getSidecarMtime(book_path)
+    local cached = _book_info_cache[book_path]
+    if cached and cached.mtime == mtime then
+        return cached.data
+    end
     local ok, doc_settings = pcall(DocSettings.open, DocSettings, book_path)
     local data = ok and doc_settings and doc_settings.data or {}
     local filename = book_path:match("([^/\\]+)$") or book_path
@@ -1665,26 +2867,106 @@ function AllNotesViewer:getBookInfo(book_path)
     
     if not title or title == "" then title = filename:gsub("%.[^.]+$", "") end
     
-    return { path = book_path, filename = filename, title = title or filename, authors = authors or "Unknown", tags = tags }
+    local info = { path = book_path, filename = filename, title = title or filename, authors = authors or "Unknown", tags = tags }
+    _book_info_cache[book_path] = { data = info, mtime = mtime }
+    return info
 end
 function AllNotesViewer:findAllNotes()
     local notes_data = {}
-    local history = ReadHistory.hist
-    if not history then return notes_data end
-    for _, item in ipairs(history) do
-        local book_path = item.file
-        if book_path and lfs.attributes(book_path, "mode") then
-            local annotations = self:loadBookAnnotations(book_path)
-            if #annotations > 0 then
-                local book_info = self:getBookInfo(book_path)
-                table.insert(notes_data, {
-                    path = book_path, filename = book_info.filename,
-                    title = book_info.title, authors = book_info.authors, tags = book_info.tags, notes = annotations,
-                })
+    local seen = {}  -- deduplicate by book_path
+
+    -- Helper: load annotations for a path and add to notes_data if any found
+    local function addBook(book_path)
+        if seen[book_path] then return end
+        if not lfs.attributes(book_path, "mode") then return end
+        local annotations = self:loadBookAnnotations(book_path)
+        if #annotations > 0 then
+            seen[book_path] = true
+            local book_info = self:getBookInfo(book_path)
+            table.insert(notes_data, {
+                path = book_path, filename = book_info.filename,
+                title = book_info.title, authors = book_info.authors,
+                tags = book_info.tags, notes = annotations,
+            })
+        end
+    end
+
+    -- Source 1: BookInfoManager SQLite DB (all books ever browsed in file manager)
+    local ok_sq, SQ3 = pcall(require, "lua-ljsqlite3/init")
+    local ok_ds, DataStorage = pcall(require, "datastorage")
+    if ok_sq and ok_ds then
+        local db_path = DataStorage:getDataDir() .. "/bookinfo_cache.db"
+        if lfs.attributes(db_path, "mode") then
+            local ok_db, db = pcall(SQ3.open, db_path)
+            if ok_db and db then
+                local ok_stmt, stmt = pcall(function()
+                    return db:prepare("SELECT directory, filename FROM bookinfo WHERE directory IS NOT NULL AND filename IS NOT NULL")
+                end)
+                if ok_stmt and stmt then
+                    local ok_iter, err = pcall(function()
+                        for row in stmt:nrows() do
+                            local sep = row.directory:sub(-1) == "/" and "" or "/"
+                            local book_path = row.directory .. sep .. row.filename
+                            addBook(book_path)
+                        end
+                    end)
+                    pcall(function() stmt:close() end)
+                end
+                pcall(function() db:close() end)
             end
         end
     end
+
+    -- Source 2: ReadHistory (books opened but possibly not browsed via file manager)
+    local history = ReadHistory.hist
+    if history then
+        for _, item in ipairs(history) do
+            if item.file then addBook(item.file) end
+        end
+    end
+
     return notes_data
+end
+function AllNotesViewer:showNotesForBook(book_path, book_title, raw_annotations)
+    local book_info = self:getBookInfo(book_path)
+    local notes_list = {}
+    local function split_tags(val)
+        if not val then return nil end
+        if type(val) == "table" then return val end
+        if type(val) == "string" then
+            local t = {}
+            for tag in val:gmatch("[^,;\n|\t]+") do
+                tag = tag:match("^%s*(.-)%s*$")
+                if tag ~= "" then table.insert(t, tag) end
+            end
+            return t
+        end
+        return nil
+    end
+    local book_tags_table = split_tags(book_info and book_info.tags)
+    for _, note in ipairs(raw_annotations) do
+        local note_tags = split_tags(note.tags) or book_tags_table or {}
+        local tag_set = {}
+        for _, tag in ipairs(note_tags) do if tag ~= "" then tag_set[tag] = true end end
+        local all_tags = {}
+        for tag in pairs(tag_set) do table.insert(all_tags, tag) end
+        table.sort(all_tags)
+        table.insert(notes_list, {
+            book_title = book_title,
+            book_authors = book_info and book_info.authors or nil,
+            book_filename = book_path:match("([^/\\]+)$") or book_path,
+            book_path = book_path,
+            page = note.page, chapter = note.chapter,
+            pos0 = note.pos0, pos1 = note.pos1,
+            highlighted_text = note.text, user_note = note.notes,
+            datetime = note.datetime, drawer = note.drawer, color = note.color,
+            tags = all_tags,
+        })
+    end
+    if #notes_list == 0 then return end
+    local sort_mode = getSetting("sort_mode", "date_newest")
+    NotesListWidget:sortNotesList(notes_list, sort_mode)
+    UIManager:show(NotesListWidget:new{ notes_list = notes_list, viewer = self, single_book = true })
 end
 function AllNotesViewer:showAllNotes()
     local all_notes_by_book = self:findAllNotes()
@@ -1876,96 +3158,110 @@ function AllNotesViewer:showStylePicker(note, parent_widget)
 end
 function AllNotesViewer:updateHighlightStyle(note, new_style, parent_widget)
     if not note.book_path then return end
-    local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
-    if not ok or not doc_settings then return end
-    local data = doc_settings.data
-    if not data then return end
+    local ReaderUI = require("apps/reader/readerui")
+    local live_ui = ReaderUI and ReaderUI.instance
+    local is_open = live_ui and live_ui.document and live_ui.document.file == note.book_path
     local updated = false
-    
-    local items = data.annotations
-    if items and #items > 0 then
-        for _, item in ipairs(items) do
-            if item.datetime == note.datetime and item.text == note.highlighted_text then
-                item.drawer = new_style
-                updated = true
-                break
-            end
-        end
-    end
-    
-    if not updated then
-        local highlights = data.highlight or {}
-        for _, page_highlights in pairs(highlights) do
-            if type(page_highlights) == "table" then
-                for _, hl in ipairs(page_highlights) do
-                    if hl.datetime == note.datetime and hl.text == note.highlighted_text then
-                        hl.drawer = new_style
-                        updated = true
-                        break
-                    end
+    if is_open then
+        if live_ui.annotation and live_ui.annotation.annotations then
+            for _, item in ipairs(live_ui.annotation.annotations) do
+                if item.datetime == note.datetime and item.text == note.highlighted_text then
+                    item.drawer = new_style
+                    updated = true
+                    break
                 end
             end
-            if updated then break end
         end
-    end
-    if updated then
-        doc_settings:flush()
-        
-        for _, n in ipairs(parent_widget.notes_list) do
-            if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
-                n.drawer = new_style
-                break
+        if updated then live_ui:handleEvent(Event:new("AnnotationsModified", { note })) end
+    else
+        local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
+        if not ok or not doc_settings then return end
+        local data = doc_settings.data
+        if not data then return end
+        local items = data.annotations
+        if items and #items > 0 then
+            for _, item in ipairs(items) do
+                if item.datetime == note.datetime and item.text == note.highlighted_text then
+                    item.drawer = new_style; updated = true; break
+                end
             end
         end
-        self.ui:handleEvent(Event:new("AnnotationsModified", { note }))
+        if not updated then
+            for _, page_highlights in pairs(data.highlight or {}) do
+                if type(page_highlights) == "table" then
+                    for _, hl in ipairs(page_highlights) do
+                        if hl.datetime == note.datetime and hl.text == note.highlighted_text then
+                            hl.drawer = new_style; updated = true; break
+                        end
+                    end
+                end
+                if updated then break end
+            end
+        end
+        if updated then doc_settings:flush() end
+    end
+    if updated then
+        self:clearBookCache(note.book_path)
+        for _, n in ipairs(parent_widget.notes_list) do
+            if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
+                n.drawer = new_style; break
+            end
+        end
         parent_widget:refresh()
         UIManager:show(require("ui/widget/infomessage"):new{ text = _("Style updated."), timeout = 1 })
     end
 end
 function AllNotesViewer:updateHighlightColor(note, new_color, parent_widget)
     if not note.book_path then return end
-    local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
-    if not ok or not doc_settings then return end
-    local data = doc_settings.data
-    if not data then return end
+    local ReaderUI = require("apps/reader/readerui")
+    local live_ui = ReaderUI and ReaderUI.instance
+    local is_open = live_ui and live_ui.document and live_ui.document.file == note.book_path
     local updated = false
-    
-    local items = data.annotations
-    if items and #items > 0 then
-        for _, item in ipairs(items) do
-            if item.datetime == note.datetime and item.text == note.highlighted_text then
-                item.color = new_color
-                updated = true
-                break
-            end
-        end
-    end
-    
-    if not updated then
-        local highlights = data.highlight or {}
-        for _, page_highlights in pairs(highlights) do
-            if type(page_highlights) == "table" then
-                for _, hl in ipairs(page_highlights) do
-                    if hl.datetime == note.datetime and hl.text == note.highlighted_text then
-                        hl.color = new_color
-                        updated = true
-                        break
-                    end
+    if is_open then
+        if live_ui.annotation and live_ui.annotation.annotations then
+            for _, item in ipairs(live_ui.annotation.annotations) do
+                if item.datetime == note.datetime and item.text == note.highlighted_text then
+                    item.color = new_color
+                    updated = true
+                    break
                 end
             end
-            if updated then break end
         end
-    end
-    if updated then
-        doc_settings:flush()
-        
-        for _, n in ipairs(parent_widget.notes_list) do
-            if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
-                n.color = new_color
-                break
+        if updated then live_ui:handleEvent(Event:new("AnnotationsModified", { note })) end
+    else
+        local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
+        if not ok or not doc_settings then return end
+        local data = doc_settings.data
+        if not data then return end
+        local items = data.annotations
+        if items and #items > 0 then
+            for _, item in ipairs(items) do
+                if item.datetime == note.datetime and item.text == note.highlighted_text then
+                    item.color = new_color; updated = true; break
+                end
             end
         end
-        self.ui:handleEvent(Event:new("AnnotationsModified", { note }))
+        if not updated then
+            for _, page_highlights in pairs(data.highlight or {}) do
+                if type(page_highlights) == "table" then
+                    for _, hl in ipairs(page_highlights) do
+                        if hl.datetime == note.datetime and hl.text == note.highlighted_text then
+                            hl.color = new_color; updated = true; break
+                        end
+                    end
+                end
+                if updated then break end
+            end
+        end
+        if updated then doc_settings:flush() end
+    end
+    if updated then
+        self:clearBookCache(note.book_path)
+        for _, n in ipairs(parent_widget.notes_list) do
+            if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
+                n.color = new_color; break
+            end
+        end
         parent_widget:refresh()
         UIManager:show(require("ui/widget/infomessage"):new{ text = _("Color updated."), timeout = 1 })
     end
@@ -1982,51 +3278,58 @@ function AllNotesViewer:confirmDelete(note, parent_widget)
 end
 function AllNotesViewer:deleteAnnotation(note, parent_widget)
     if not note.book_path then return end
-    local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
-    if not ok or not doc_settings then return end
-    local data = doc_settings.data
-    if not data then return end
+    local ReaderUI = require("apps/reader/readerui")
+    local live_ui = ReaderUI and ReaderUI.instance
+    local is_open = live_ui and live_ui.document and live_ui.document.file == note.book_path
     local deleted = false
-    
-    local items = data.annotations
-    if items and #items > 0 then
-        for i = #items, 1, -1 do
-            local item = items[i]
-            if item.datetime == note.datetime and item.text == note.highlighted_text then
-                table.remove(items, i)
-                deleted = true
-                break
-            end
-        end
-    end
-    
-    if not deleted then
-        local highlights = data.highlight or {}
-        for page, page_highlights in pairs(highlights) do
-            if type(page_highlights) == "table" then
-                for i = #page_highlights, 1, -1 do
-                    local hl = page_highlights[i]
-                    if hl.datetime == note.datetime and hl.text == note.highlighted_text then
-                        table.remove(page_highlights, i)
-                        deleted = true
-                        break
-                    end
+    if is_open then
+        if live_ui.annotation and live_ui.annotation.annotations then
+            local items = live_ui.annotation.annotations
+            for i = #items, 1, -1 do
+                if items[i].datetime == note.datetime and items[i].text == note.highlighted_text then
+                    table.remove(items, i)
+                    deleted = true
+                    break
                 end
             end
-            if deleted then break end
         end
+        if deleted then live_ui:handleEvent(Event:new("AnnotationsModified", { note })) end
+    else
+        local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
+        if not ok or not doc_settings then return end
+        local data = doc_settings.data
+        if not data then return end
+        local items = data.annotations
+        if items and #items > 0 then
+            for i = #items, 1, -1 do
+                if items[i].datetime == note.datetime and items[i].text == note.highlighted_text then
+                    table.remove(items, i); deleted = true; break
+                end
+            end
+        end
+        if not deleted then
+            for _, page_highlights in pairs(data.highlight or {}) do
+                if type(page_highlights) == "table" then
+                    for i = #page_highlights, 1, -1 do
+                        local hl = page_highlights[i]
+                        if hl.datetime == note.datetime and hl.text == note.highlighted_text then
+                            table.remove(page_highlights, i); deleted = true; break
+                        end
+                    end
+                end
+                if deleted then break end
+            end
+        end
+        if deleted then doc_settings:flush() end
     end
     if deleted then
-        doc_settings:flush()
-        
+        self:clearBookCache(note.book_path)
         for i = #parent_widget.notes_list, 1, -1 do
             local n = parent_widget.notes_list[i]
             if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
-                table.remove(parent_widget.notes_list, i)
-                break
+                table.remove(parent_widget.notes_list, i); break
             end
         end
-        self.ui:handleEvent(Event:new("AnnotationsModified", { note }))
         parent_widget:refresh()
     end
 end
@@ -2064,48 +3367,55 @@ function AllNotesViewer:editNote(note, parent_widget)
 end
 function AllNotesViewer:saveNoteEdit(note, new_note_text, parent_widget)
     if not note.book_path then return end
-    local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
-    if not ok or not doc_settings then return end
-    local data = doc_settings.data
-    if not data then return end
+    local ReaderUI = require("apps/reader/readerui")
+    local live_ui = ReaderUI and ReaderUI.instance
+    local is_open = live_ui and live_ui.document and live_ui.document.file == note.book_path
     local updated = false
-    
-    local items = data.annotations
-    if items and #items > 0 then
-        for _, item in ipairs(items) do
-            if item.datetime == note.datetime and item.text == note.highlighted_text then
-                item.note = new_note_text
-                updated = true
-                break
-            end
-        end
-    end
-    
-    if not updated then
-        local highlights = data.highlight or {}
-        for _, page_highlights in pairs(highlights) do
-            if type(page_highlights) == "table" then
-                for _, hl in ipairs(page_highlights) do
-                    if hl.datetime == note.datetime and hl.text == note.highlighted_text then
-                        hl.note = new_note_text
-                        updated = true
-                        break
-                    end
+    if is_open then
+        if live_ui.annotation and live_ui.annotation.annotations then
+            for _, item in ipairs(live_ui.annotation.annotations) do
+                if item.datetime == note.datetime and item.text == note.highlighted_text then
+                    item.note = new_note_text
+                    updated = true
+                    break
                 end
             end
-            if updated then break end
         end
-    end
-    if updated then
-        doc_settings:flush()
-        
-        for _, n in ipairs(parent_widget.notes_list) do
-            if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
-                n.user_note = new_note_text
-                break
+        if updated then live_ui:handleEvent(Event:new("AnnotationsModified", { note })) end
+    else
+        local ok, doc_settings = pcall(DocSettings.open, DocSettings, note.book_path)
+        if not ok or not doc_settings then return end
+        local data = doc_settings.data
+        if not data then return end
+        local items = data.annotations
+        if items and #items > 0 then
+            for _, item in ipairs(items) do
+                if item.datetime == note.datetime and item.text == note.highlighted_text then
+                    item.note = new_note_text; updated = true; break
+                end
             end
         end
-        self.ui:handleEvent(Event:new("AnnotationsModified", { note }))
+        if not updated then
+            for _, page_highlights in pairs(data.highlight or {}) do
+                if type(page_highlights) == "table" then
+                    for _, hl in ipairs(page_highlights) do
+                        if hl.datetime == note.datetime and hl.text == note.highlighted_text then
+                            hl.note = new_note_text; updated = true; break
+                        end
+                    end
+                end
+                if updated then break end
+            end
+        end
+        if updated then doc_settings:flush() end
+    end
+    if updated then
+        self:clearBookCache(note.book_path)
+        for _, n in ipairs(parent_widget.notes_list) do
+            if n.datetime == note.datetime and n.highlighted_text == note.highlighted_text then
+                n.user_note = new_note_text; break
+            end
+        end
         parent_widget:refresh()
         UIManager:show(require("ui/widget/infomessage"):new{ text = _("Note saved."), timeout = 1 })
     end
