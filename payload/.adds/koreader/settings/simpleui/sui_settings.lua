@@ -4,7 +4,7 @@ return {
     ["simpleui_bar_mode"] = "both",
     ["simpleui_bar_rs_text_scale_pct"] = 120,
     ["simpleui_bar_tabs"] = {
-        [1] = "home",
+        [1] = "custom_qa_1",
         [2] = "sui_settings",
         [3] = "homescreen",
         [4] = "stats_calendar",
@@ -117,7 +117,13 @@ return {
     },
     ["simpleui_loaded_version"] = "2.7.1",
     ["simpleui_onboarding_done"] = true,
-    ["simpleui_qa_list"] = {},
+    ["simpleui_qa_custom_qa_1"] = {
+        ["dispatcher_action"] = "toggle_bookshelf",
+        ["label"] = "Library",
+    },
+    ["simpleui_qa_list"] = {
+        [1] = "custom_qa_1",
+    },
     ["simpleui_qa_migrated_v1"] = true,
     ["simpleui_qa_row_instances"] = {},
     ["simpleui_qs_bar_bg"] = "flat",

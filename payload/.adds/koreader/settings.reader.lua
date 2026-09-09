@@ -273,7 +273,7 @@ return {
     ["shorten_home_dir"] = false,
     ["show_filter"] = {},
     ["simpleui_userdata_migrated_v1"] = true,
-    ["start_with"] = "filemanager",
+    ["start_with"] = "homescreen_simpleui",
     ["statistics"] = {
         ["calendar_browse_future_months"] = false,
         ["calendar_nb_book_spans"] = 3,
