@@ -207,6 +207,12 @@ patch; without it KOReader has no UI-font picker at all.
 
 ## Adding books
 
+The installer creates a starting set of subject folders on your device — the
+same shape this setup uses — listed in `library/FOLDERS.txt`. It only creates
+what you do not already have: existing folders are never renamed, never
+emptied, and the books inside them are never touched. Edit that file to use
+your own folder names.
+
 `library/` ships empty, so cloning never touches your books. Put your book
 folders inside it, one per subject, then run `./install.sh` again.
 

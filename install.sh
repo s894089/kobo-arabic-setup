@@ -262,6 +262,51 @@ rsync -a "$PAYLOAD/fonts/"        "$DEVICE/fonts/"
 rsync -a --delete "$PAYLOAD/.kobo/dict/" "$DEVICE/.kobo/dict/"
 ok "Fonts and dictionaries in place"
 
+# ─── library folder shape ─────────────────────────────────────────────────────
+# Creates the subject folders listed in library/FOLDERS.txt that the device does
+# not already have. Purely additive: it never deletes, never renames, never
+# writes inside a folder that exists, and never touches a book.
+#
+# The comparison is NFC-normalised on both sides. macOS reports Arabic folder
+# names decomposed (NFD) while the device may hold them composed; a plain string
+# match would fail to see an existing folder and create a confusing duplicate
+# right next to it.
+if [ -f "$ROOT/library/FOLDERS.txt" ]; then
+  step "Library folders"
+  made=$(python3 - "$DEVICE" "$ROOT/library/FOLDERS.txt" <<'PYEOF'
+import os, sys, unicodedata
+device, manifest = sys.argv[1], sys.argv[2]
+nfc = lambda s: unicodedata.normalize("NFC", s)
+try:
+    existing = {nfc(d) for d in os.listdir(device)
+                if os.path.isdir(os.path.join(device, d))}
+except OSError as e:
+    print("!" + str(e)); raise SystemExit(0)
+made = []
+for line in open(manifest, encoding="utf-8"):
+    name = line.strip()
+    if not name or name.startswith("#") or nfc(name) in existing:
+        continue
+    try:
+        os.mkdir(os.path.join(device, name))
+        made.append(name)
+    except OSError as e:
+        print("!" + name + ": " + str(e))
+print("\n".join(made))
+PYEOF
+) || true
+  warns=$(printf '%s\n' "$made" | grep '^!' || true)
+  made=$(printf '%s\n' "$made" | grep -v '^!' | grep -v '^$' || true)
+  n=$(printf '%s\n' "$made" | grep -c . || true)
+  if [ -n "$warns" ]; then printf '%s\n' "$warns" | while IFS= read -r w; do warn "${w#!}"; done; fi
+  if [ "$n" -gt 0 ]; then
+    say "  created $n folder(s) you did not have:"
+    printf '%s\n' "$made" | while IFS= read -r m; do say "    $m"; done
+  else
+    say "  all folders already present — nothing created, nothing changed"
+  fi
+fi
+
 if [ "$NBOOKS" -gt 0 ]; then
   step "Copying books"
   say "  $NBOOKS book(s), $(safe_size "$BOOKS")"

@@ -1,6 +1,6 @@
 -- ./settings/bookshelf.lua
 return {
-    ["active_chip"] = "all",
+    ["active_chip"] = "reading",
     ["active_cursor"] = 1,
     ["active_page"] = 1,
     ["author_format"] = "first_last",
