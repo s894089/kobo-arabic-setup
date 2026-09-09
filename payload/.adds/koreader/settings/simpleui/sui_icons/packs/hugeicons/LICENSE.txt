@@ -1,0 +1,15 @@
+Hugeicons — MIT License
+
+These SVGs are from the Hugeicons free icon set, obtained via Iconify
+(api.iconify.design/hugeicons/*). Iconify's own collections index lists
+this set as MIT: no attribution required, commercial use allowed,
+redistribution permitted.
+
+  https://hugeicons.com/
+  https://icon-sets.iconify.design/hugeicons/
+  https://github.com/iconify/icon-sets/blob/master/collections.md
+
+Each file has been modified only in presentation: stroke-width forced to
+1, and stroke colour set to explicit #000000 (the originals use
+"currentColor", which is unreliable without a guaranteed colour context
+on an e-ink device).
