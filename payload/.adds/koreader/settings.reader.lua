@@ -154,7 +154,7 @@ return {
         },
     },
     ["filemanager_display_mode"] = "mosaic_image",
-    ["filemanagermenu_tab_index"] = 3,
+    ["filemanagermenu_tab_index"] = 2,
     ["folder_shortcuts"] = {},
     ["folder_shortcuts_settings"] = {},
     ["footer"] = {
