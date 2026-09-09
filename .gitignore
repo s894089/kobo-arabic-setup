@@ -4,6 +4,10 @@ backups/
 # The book collection — 2.7 GB, and three files exceed GitHub's 100 MB
 # per-file hard limit. Share it on a disk or cloud drive, not through git.
 library/
+# ...but the folder-shape manifest is part of the shipped setup, not personal
+# data. Without this exception it is silently swallowed by the rule above and
+# install.sh's folder step becomes a no-op on every clone.
+!library/FOLDERS.txt
 
 # Personal library reorganisation — specific to one person's books
 tools/library-plan.json

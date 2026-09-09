@@ -150,8 +150,9 @@ To preview without writing anything:
 
 ## Using it — Bookshelf and Simple UI
 
-The device opens straight into **Bookshelf**, your library. **Simple UI** is the
-dashboard behind it. You move between them with the bar along the bottom.
+The device opens on the **Simple UI** dashboard. **Bookshelf** is your library,
+one tap away on the **Library** button. You move between them with the bar along
+the bottom.
 
 ### The bottom bar
 
