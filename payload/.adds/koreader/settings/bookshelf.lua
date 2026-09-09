@@ -27,20 +27,6 @@ return {
     ["hero_modules_seeded"] = true,
     ["micro_modules_placement"] = "fullscreen",
     ["migrated"] = true,
-    ["quote_of_day_daily_cache"] = {
-        ["data"] = {
-            ["author"] = "أحمد امين",
-            ["chapter"] = "بقلم الدكتور فيليب حتى",
-            ["filepath"] = "/mnt/onboard/أقرأ الآن/علمتني الحياة - أحمد أمين.epub",
-            ["legacy"] = false,
-            ["page"] = "/body/DocFragment[12]/body/p[5]/text().0",
-            ["page_display"] = 31,
-            ["pos0"] = "/body/DocFragment[12]/body/p[5]/text().0",
-            ["text"] = "علمتني الحياة أن أعرب عن آرائي إذا طلب إلى ذلك في اعتدال ولباقة، وطبقا لما يمليه الضمير، ووفقا لما تتطلبه الأمانة الفكرية وذلك بغض النظر عما إذا كانت تلك…",
-            ["title"] = "علمتني الحياة",
-        },
-        ["key"] = "d2026-09-09:0",
-    },
     ["start_menu_items"] = {
         [1] = {
             ["id"] = "sm_quote",

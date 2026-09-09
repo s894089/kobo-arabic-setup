@@ -98,29 +98,47 @@ s = re.sub(r'^\s*\[\d+\] = "Noto Sans CJK SC",\n', "", s, flags=re.M)
 open(p, "w", encoding="utf-8").write(s)
 PYEOF
 
-# Simple UI's config is worth sharing — the page layout, module sizes and bars
-# are the whole point of shipping it. But it also carries a runtime cache under
-# "simpleui_stale_books_v1": the path of whatever you're reading right now, plus
-# every prefetched book path, author and MD5. That is reading data and must never
-# reach a public repo. Strip that one key; Simple UI rebuilds it on first run,
-# so nothing shareable is lost.
-SUI="$PAYLOAD/settings/simpleui/sui_settings.lua"
-[ -f "$SUI" ] && python3 - "$SUI" <<'PYEOF'
-import sys
-p = sys.argv[1]
-out, depth, dropping = [], 0, False
-for line in open(p, encoding="utf-8").read().splitlines(keepends=True):
-    if not dropping and '["simpleui_stale_books_v1"]' in line:
-        depth = line.count("{") - line.count("}")
-        dropping = depth > 0          # a single-line value ends right here
+# Plugin config is worth sharing — layouts, templates and presets are the whole
+# point of shipping it. But several plugins keep a runtime CACHE inside the very
+# same file, and those caches are reading data:
+#
+#   sui_settings.lua  simpleui_stale_books_v1   — the currently open file, plus
+#                                                 every prefetched book path,
+#                                                 author and MD5
+#   bookshelf.lua     quote_of_day_daily_cache  — a book's path, title, author,
+#                                                 chapter, exact reading position
+#                                                 and a quoted passage from it
+#
+# Each is stripped whole. Every one is rebuilt by its plugin on first run, so
+# nothing shareable is lost. Add to this table when a plugin starts caching.
+python3 - "$PAYLOAD" <<'PYEOF'
+import os, sys
+payload = sys.argv[1]
+TARGETS = [
+    ("settings/simpleui/sui_settings.lua", "simpleui_stale_books_v1"),
+    ("settings/bookshelf.lua",             "quote_of_day_daily_cache"),
+]
+for rel, key in TARGETS:
+    p = os.path.join(payload, rel)
+    if not os.path.isfile(p):
         continue
-    if dropping:
-        depth += line.count("{") - line.count("}")
-        if depth <= 0:
-            dropping = False
-        continue
-    out.append(line)
-open(p, "w", encoding="utf-8").write("".join(out))
+    needle = '["%s"]' % key
+    out, depth, dropping, hit = [], 0, False, False
+    for line in open(p, encoding="utf-8").read().splitlines(keepends=True):
+        if not dropping and needle in line:
+            hit = True
+            depth = line.count("{") - line.count("}")
+            dropping = depth > 0        # a single-line value ends right here
+            continue
+        if dropping:
+            depth += line.count("{") - line.count("}")
+            if depth <= 0:
+                dropping = False
+            continue
+        out.append(line)
+    if hit:
+        open(p, "w", encoding="utf-8").write("".join(out))
+        print("  scrubbed %s from %s" % (key, rel))
 PYEOF
 
 ok "payload/.adds/koreader/ now matches your device (minus personal data)"
