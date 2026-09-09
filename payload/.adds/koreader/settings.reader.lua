@@ -242,7 +242,6 @@ return {
     ["plugins_disabled"] = {
         ["SSH"] = true,
         ["calibrecompanion"] = true,
-        ["coverbrowser"] = true,
         ["evernote"] = true,
         ["goodreads"] = true,
         ["kobolight"] = true,
