@@ -38,6 +38,18 @@ around a book.
 It also sets Arabic as the text language for correct justification and
 hyphenation, and trims Kobo's bundled dictionaries down to English only.
 
+### You get the whole setup, not just the plugins
+
+The installer ships the actual **configuration**, not only the software:
+the Simple UI home screen and its pages, the navigation bar, Bookshelf's
+templates and chips, the Bookends preset, gestures and the icon set. Clone,
+run, reboot — your device looks like the one this repo was built from.
+
+**Your reading life stays yours.** Reading statistics, streaks, history,
+vocabulary, lookups, highlights, notes and every `.sdr` folder are excluded
+from both the copy and the delete. Installing this hands you someone else's
+*design*, never their reading data — and it never takes yours away.
+
 The interface stays in **English**. Only the *text rendering* language changes.
 
 ---
