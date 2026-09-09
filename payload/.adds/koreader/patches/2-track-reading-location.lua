@@ -1,13 +1,3 @@
-local MODULE_KEY = "burrow.internal.2_track_reading_location"
-local existing_module = package.loaded[MODULE_KEY]
-if existing_module then return existing_module end
-local Module = { key = MODULE_KEY, phase = "early", filename = "2-track-reading-location.lua" }
-package.loaded[MODULE_KEY] = Module
-
-function Module.apply()
-    if Module.applied then return true end
-
-
 --[[
     Track Reading Location v1.1.0
 
@@ -1246,9 +1236,3 @@ ReaderUI.onSetCurrentPageAsReadingLocation = function(self)
 end
 
 logger.dbg("ReadingLocationTracker Patch: Loaded")
-
-    Module.applied = true
-    return true
-end
-
-return Module
