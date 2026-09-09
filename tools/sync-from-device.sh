@@ -63,6 +63,11 @@ EXCLUDES=(
   # NOT excluded — sharing that is the point. These hold what you have read.
   --exclude 'settings/reading_streak.lua'
   --exclude 'settings/simpleui/backups/'
+  # Bookshelf's module-breaker sentinel. It exists only while a risky module
+  # is mid-render; if it survives a boot, Bookshelf assumes that module
+  # crashed and disables it. Shipping it would tell a fresh device a crash
+  # happened that never did.
+  --exclude 'settings/bookshelf_hero_inflight'
 )
 
 if [ "$DRY" = 1 ]; then
@@ -81,7 +86,10 @@ python3 - "$PAYLOAD/settings.reader.lua" <<'PYEOF'
 import sys, re
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-for k in ("device_id", "lastfile", "lastdir"):
+# home_dir points at this owner's own library folder — often an Arabic folder
+# name that exists on no one else's device. Leaving it in would both leak the
+# library's shape and drop a friend into a directory they do not have.
+for k in ("device_id", "lastfile", "lastdir", "home_dir"):
     s = re.sub(r'^\s*\["%s"\].*\n' % k, "", s, flags=re.M)
 # fonts/noto/NotoSansCJKsc-Regular.otf is deliberately excluded above, so a
 # leftover reference to it here would make KOReader log a font-load error
