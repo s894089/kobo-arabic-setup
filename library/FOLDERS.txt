@@ -1,0 +1,23 @@
+# Library folder structure — one folder name per line.
+#
+# install.sh creates any of these that the device does not already have.
+# It NEVER deletes, renames, or writes into a folder that already exists,
+# and it never touches the books inside one. Removing a line here does not
+# remove the folder from a device.
+#
+# Names are compared NFC-normalised: macOS hands back Arabic folder names
+# decomposed (NFD) while the device may store them composed, so a plain
+# string match would miss an existing folder and create a duplicate
+# alongside it. Edit freely — these are only a starting shape.
+
+أدب وتراث
+أقرأ الآن
+أنهيت قراءته
+تاريخ
+تطوير وعمل
+روايات
+سير وتراجم
+فكر ونقد
+في القراءة والكتابة
+قرآن وتفسير
+كتب إسلامية

@@ -3,11 +3,13 @@ backups/
 
 # The book collection — 2.7 GB, and three files exceed GitHub's 100 MB
 # per-file hard limit. Share it on a disk or cloud drive, not through git.
-library/
-# ...but the folder-shape manifest is part of the shipped setup, not personal
-# data. Without this exception it is silently swallowed by the rule above and
-# install.sh's folder step becomes a no-op on every clone.
+# Note the trailing /* rather than /: git cannot re-include a file whose
+# PARENT DIRECTORY is excluded, so "library/" would swallow the exceptions
+# below no matter what. Ignoring the contents instead lets them through.
+library/*
 !library/FOLDERS.txt
+!library/README.md
+!library/.gitkeep
 
 # Personal library reorganisation — specific to one person's books
 tools/library-plan.json
