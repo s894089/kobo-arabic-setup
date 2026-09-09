@@ -148,6 +148,63 @@ To preview without writing anything:
 
 ---
 
+## Using it — Bookshelf and Simple UI
+
+The device opens straight into **Bookshelf**, your library. **Simple UI** is the
+dashboard behind it. You move between them with the bar along the bottom.
+
+### The bottom bar
+
+| Tab | What it opens |
+|---|---|
+| **Library** | Bookshelf — your books |
+| **Settings** | Simple UI's own settings |
+| **Home** | The Simple UI dashboard |
+| **Insights** | Reading time, streaks, per-month charts |
+| **History** | Recently opened |
+| **Power** | Sleep, reboot, power off |
+
+### Bookshelf — the library
+
+- **Chips along the top** filter the shelf: Home, Authors, Series, and any you add.
+  **Long-press a chip** to change what it shows and how it lays out.
+- **Swipe up from the covers** to switch between the cover grid and a text list.
+  Swipe back down to return.
+- **Long-press a book** for its detail card — description, series, progress.
+- First launch is slow. It builds a thumbnail for every book once, then it is quick.
+
+### Simple UI — the dashboard
+
+Tap **Home**. Swipe left and right between pages; the dots show where you are.
+
+- **Page 1** — clock, what you are reading now, today's stats
+- **Page 2** — recent books, reading goals (year / month / today), to-be-read
+
+To rearrange any of it: **Settings → Home Screen → Edit Home Screen Layout**.
+Add or remove pages, drag modules between them, resize each one.
+
+Reading goals live at **Settings → Home Screen → Reading Goals**. Set your
+yearly, monthly and daily targets there.
+
+### In a book
+
+- **Bookends** draws the header and footer — page numbers and progress bars.
+  Change it at **📄 → Bookends → Preset**.
+- **Annotations Viewer** collects every highlight and note across all books.
+- **Tap the top of the page** for the menus, **the bottom** for the progress bar.
+
+### Making the interface Arabic
+
+Menus ship in English. To switch the interface typeface to Amiri so Arabic
+renders properly in menus and the file browser:
+
+**File browser → ⚙ → Settings → UI font → Amiri**
+
+It asks to restart. This entry exists because of the bundled `2--ui-font.lua`
+patch; without it KOReader has no UI-font picker at all.
+
+---
+
 ## Adding books
 
 `library/` ships empty, so cloning never touches your books. Put your book
