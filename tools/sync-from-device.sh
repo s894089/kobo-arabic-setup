@@ -58,6 +58,11 @@ EXCLUDES=(
   --exclude 'screenshots/' --exclude 'crash.log' --exclude '._*'
   --exclude 'ota/' --exclude '*.old' --exclude '*.oft' --exclude 'FSCK0000.*'
   --exclude 'fonts/noto/NotoSansCJKsc-Regular.otf'
+  # Reading data written by the added plugins. Design config from the same
+  # plugins (bookshelf.lua, bookends.lua, sui_settings.lua) is deliberately
+  # NOT excluded — sharing that is the point. These hold what you have read.
+  --exclude 'settings/reading_streak.lua'
+  --exclude 'settings/simpleui/backups/'
 )
 
 if [ "$DRY" = 1 ]; then

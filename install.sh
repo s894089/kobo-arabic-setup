@@ -225,8 +225,22 @@ cp "$DEVICE/.kobo/version" "$BACKUPS/$STAMP/kobo-version.txt" 2>/dev/null || tru
 ok "Backup: $BACKUPS/$STAMP ($(safe_size "$BACKUPS/$STAMP"))"
 
 # ─── 2. install ───────────────────────────────────────────────────────────────
-# --delete removes plugins this setup dropped; the excludes are your personal data,
+# --delete removes plugins this setup dropped; the excludes are YOUR personal data,
 # which rsync will neither overwrite nor delete.
+#
+# Two different kinds of file live under settings/ and they must be treated
+# differently:
+#
+#   design config  — how the setup looks: Simple UI's layout, Bookshelf's
+#                    templates, Bookends' presets, gestures. This is the whole
+#                    point of the repo, so it IS shipped and DOES replace yours.
+#
+#   reading data   — what you have read: statistics, streaks, history, vocabulary,
+#                    lookups. Never shipped, never overwritten, never deleted.
+#                    Every such file needs an --exclude here, or installing this
+#                    setup would hand you someone else's reading life.
+#
+# When adding a plugin that stores reading data under settings/, add it below.
 step "Installing KOReader and plugins"
 copy_with_progress "KOReader, plugins, fonts, dictionaries" \
   "$PAYLOAD/.adds/koreader/" "$DEVICE/.adds/koreader/" \
@@ -236,7 +250,9 @@ copy_with_progress "KOReader, plugins, fonts, dictionaries" \
   --exclude 'settings/statistics.sqlite3' --exclude 'settings/bookinfo_cache.sqlite3' \
   --exclude 'settings/vocabulary_builder.sqlite3' --exclude 'settings/lookup_history.lua' \
   --exclude 'settings/wikipedia_history.lua' --exclude 'settings/battery_stats.lua*' \
-  --exclude 'settings/koinsight.lua*' 
+  --exclude 'settings/koinsight.lua*' \
+  --exclude 'settings/reading_streak.lua' \
+  --exclude 'settings/simpleui/backups/'
 ok "KOReader $(cat "$PAYLOAD/.adds/koreader/git-rev" 2>/dev/null)"
 
 step "Installing NickelMenu entries, fonts and dictionaries"
