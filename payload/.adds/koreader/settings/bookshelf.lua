@@ -1,6 +1,6 @@
 -- ./settings/bookshelf.lua
 return {
-    ["active_chip"] = "reading",
+    ["active_chip"] = "all",
     ["active_cursor"] = 1,
     ["active_page"] = 1,
     ["author_format"] = "first_last",
@@ -25,6 +25,7 @@ return {
         },
     },
     ["hero_modules_seeded"] = true,
+    ["home_expanded"] = false,
     ["micro_modules_placement"] = "fullscreen",
     ["migrated"] = true,
     ["start_menu_items"] = {
@@ -98,4 +99,156 @@ return {
         },
     },
     ["start_menu_seeded"] = true,
+    ["tabs"] = {
+        [1] = {
+            ["enabled"] = true,
+            ["filter"] = {},
+            ["id"] = "all",
+            ["label"] = "Home",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "filename",
+                    ["reverse"] = false,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "all",
+            },
+        },
+        [2] = {
+            ["enabled"] = true,
+            ["filter"] = {},
+            ["id"] = "recent",
+            ["label"] = "Recent",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "last_opened",
+                    ["reverse"] = true,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "recent",
+            },
+        },
+        [3] = {
+            ["enabled"] = false,
+            ["filter"] = {},
+            ["id"] = "latest",
+            ["label"] = "Latest",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "date_added",
+                    ["reverse"] = true,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "latest",
+            },
+        },
+        [4] = {
+            ["enabled"] = true,
+            ["filter"] = {},
+            ["id"] = "series",
+            ["label"] = "Series",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "series_name",
+                    ["reverse"] = false,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "series",
+            },
+        },
+        [5] = {
+            ["enabled"] = false,
+            ["filter"] = {},
+            ["id"] = "authors",
+            ["label"] = "Authors",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "author_surname",
+                    ["reverse"] = false,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "authors",
+            },
+        },
+        [6] = {
+            ["enabled"] = false,
+            ["filter"] = {},
+            ["id"] = "genres",
+            ["label"] = "Genres",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "book_count",
+                    ["reverse"] = true,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "genres",
+            },
+        },
+        [7] = {
+            ["enabled"] = false,
+            ["filter"] = {},
+            ["id"] = "tags",
+            ["label"] = "Tags",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "book_count",
+                    ["reverse"] = true,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "tags",
+            },
+        },
+        [8] = {
+            ["enabled"] = false,
+            ["filter"] = {},
+            ["id"] = "languages",
+            ["label"] = "Languages",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "book_count",
+                    ["reverse"] = true,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "languages",
+            },
+        },
+        [9] = {
+            ["enabled"] = true,
+            ["filter"] = {},
+            ["id"] = "favorites",
+            ["label"] = "Favorites",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "date_added",
+                    ["reverse"] = true,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "favorites",
+            },
+        },
+        [10] = {
+            ["enabled"] = true,
+            ["filter"] = {},
+            ["id"] = "custom_1",
+            ["label"] = "New chip",
+            ["sort_priority"] = {
+                [1] = {
+                    ["key"] = "title",
+                    ["reverse"] = false,
+                },
+            },
+            ["source"] = {
+                ["kind"] = "all",
+            },
+        },
+    },
 }

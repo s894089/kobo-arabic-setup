@@ -154,7 +154,7 @@ return {
         },
     },
     ["filemanager_display_mode"] = "mosaic_image",
-    ["filemanagermenu_tab_index"] = 2,
+    ["filemanagermenu_tab_index"] = 1,
     ["folder_shortcuts"] = {},
     ["folder_shortcuts_settings"] = {},
     ["footer"] = {
@@ -211,7 +211,7 @@ return {
         ["wifi_status"] = false,
     },
     ["footer_presets"] = {},
-    ["frontlight_intensity"] = 24,
+    ["frontlight_intensity"] = 5,
     ["frontlight_warmth"] = 60,
     ["ges_tap_interval_on_keyboard_ms"] = 0,
     ["highlight_dialog_position"] = "center",
@@ -219,6 +219,7 @@ return {
     ["highlight_long_hold_threshold_s"] = 3,
     ["history_display_mode"] = "mosaic_image",
     ["history_filter"] = "all",
+    ["home_dir"] = "/mnt/onboard",
     ["httpinspector"] = {
         ["port"] = 8080,
     },
@@ -230,7 +231,7 @@ return {
     ["keyboard_layouts"] = {},
     ["language"] = "C",
     ["last_migration_date"] = 20260623,
-    ["night_mode"] = false,
+    ["night_mode"] = true,
     ["page_turns_tap_zones"] = "default",
     ["panel_zoom_enabled"] = {
         ["cbt"] = true,

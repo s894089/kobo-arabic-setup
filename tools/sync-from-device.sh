@@ -86,11 +86,16 @@ python3 - "$PAYLOAD/settings.reader.lua" <<'PYEOF'
 import sys, re
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-# home_dir points at this owner's own library folder — often an Arabic folder
-# name that exists on no one else's device. Leaving it in would both leak the
-# library's shape and drop a friend into a directory they do not have.
-for k in ("device_id", "lastfile", "lastdir", "home_dir"):
+for k in ("device_id", "lastfile", "lastdir"):
     s = re.sub(r'^\s*\["%s"\].*\n' % k, "", s, flags=re.M)
+# home_dir may point deep inside the owner's library — a specific Arabic folder
+# that exists on no one else's device, and that scopes the file browser and
+# Bookshelf to that one folder so the rest of the library is unreachable.
+# Deleting the key outright is worse, not better: it leaves a fresh device with
+# no home at all. Normalise it to the Kobo root instead, which is the same path
+# on every Kobo, reveals nothing, and shows the whole library.
+s = re.sub(r'^(\s*)\["home_dir"\]\s*=\s*".*",\s*$',
+           r'\1["home_dir"] = "/mnt/onboard",', s, flags=re.M)
 # fonts/noto/NotoSansCJKsc-Regular.otf is deliberately excluded above, so a
 # leftover reference to it here would make KOReader log a font-load error
 # on every start. Drop the dangling entry, not the whole recently-selected list.
