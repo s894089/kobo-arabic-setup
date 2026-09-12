@@ -30,10 +30,12 @@ organise a library. Open it in a browser after cloning.
 | **Annotations Viewer** | Browse, edit and manage every highlight and note across your whole library |
 | **Icon set** | Hugeicons — replaces the file-browser and toolbar icons |
 
-Three extra user patches are also included: a dual-state screensaver mode,
+Four extra user patches are also included: a dual-state screensaver mode,
 an option to exclude specific books from wallpaper/cover-mode screensavers,
-and a "go back to where I actually stopped reading" prompt after jumping
-around a book.
+a "go back to where I actually stopped reading" prompt after jumping around
+a book, and one that hides the non-book folders Kobo keeps at the root
+(`fonts/`, `Exported Annotations/`, `Exported Notebooks/`, `My Notebooks/`)
+from the file browser — nothing is deleted, they are just not listed.
 
 It also sets Arabic as the text language for correct justification and
 hyphenation, and trims Kobo's bundled dictionaries down to English only.
