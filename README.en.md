@@ -248,7 +248,7 @@ KOBO_MOUNT=/mnt/e ./install.sh
 
 ## What is kept, what is replaced
 
-**Replaced** — `.adds/koreader/`, `.adds/nm/menu`, `.kobo/dict/`, `fonts/`
+**Replaced** — `.adds/koreader/`, `.adds/nm/menu`, `.kobo/dict/`, `fonts/`, `wallpapers/` (fonts and wallpapers are only ever added to, never deleted from)
 
 **Kept, always** — your books · every `.sdr` folder (reading positions and
 highlights) · `statistics.sqlite3` · `history.lua` · vocabulary builder ·

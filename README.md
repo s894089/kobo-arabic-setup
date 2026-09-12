@@ -297,7 +297,7 @@ KOBO_MOUNT=/mnt/e ./install.sh
 
 <div dir="rtl">
 
-**يُستبدل** — `.adds/koreader/` و`.adds/nm/menu` و`.kobo/dict/` و`fonts/`
+**يُستبدل** — `.adds/koreader/` و`.adds/nm/menu` و`.kobo/dict/` و`fonts/` و`wallpapers/` (الخطوط والخلفيات تُضاف فقط ولا يُحذف منها شيء)
 
 **يبقى دائمًا** — كتبك · كل مجلدات `.sdr` (مواضع القراءة والتظليلات) ·
 `statistics.sqlite3` · `history.lua` · مفردات vocabulary builder · إعدادات KoInsight

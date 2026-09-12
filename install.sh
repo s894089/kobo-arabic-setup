@@ -128,7 +128,7 @@ if [ "$RESTORE" = 1 ]; then
   fi
   [ -d "$LAST/.kobo/dict" ] && rsync -a --delete "$LAST/.kobo/dict/" "$DEVICE/.kobo/dict/"
   ok "Restored .adds/ and .kobo/dict/ from $(basename "${LAST%/}")"
-  warn "Fonts added to fonts/ are left in place — delete them by hand if you want them gone."
+  warn "Fonts and wallpapers added to fonts/ and wallpapers/ are left in place — delete them by hand if you want them gone."
   say  "Eject and reboot the Kobo."; exit 0
 fi
 
@@ -141,6 +141,7 @@ cat <<PLAN
                 .adds/nm/menu     (NickelMenu entries)
                 .kobo/dict/       (Kobo's own dictionaries)
                 fonts/            (Arabic fonts for Kobo's reader)
+                wallpapers/       (sleep-screen images; added, never deleted)
   Will KEEP   : your books, every .sdr folder (positions + highlights),
                 reading statistics, history, vocabulary, KoInsight settings
 PLAN
@@ -255,12 +256,13 @@ copy_with_progress "KOReader, plugins, fonts, dictionaries" \
   --exclude 'settings/simpleui/backups/'
 ok "KOReader $(cat "$PAYLOAD/.adds/koreader/git-rev" 2>/dev/null)"
 
-step "Installing NickelMenu entries, fonts and dictionaries"
-mkdir -p "$DEVICE/.adds/nm" "$DEVICE/fonts"
+step "Installing NickelMenu entries, fonts, wallpapers and dictionaries"
+mkdir -p "$DEVICE/.adds/nm" "$DEVICE/fonts" "$DEVICE/wallpapers"
 rsync -a "$PAYLOAD/.adds/nm/menu" "$DEVICE/.adds/nm/menu"
 rsync -a "$PAYLOAD/fonts/"        "$DEVICE/fonts/"
+rsync -a "$PAYLOAD/wallpapers/"   "$DEVICE/wallpapers/"
 rsync -a --delete "$PAYLOAD/.kobo/dict/" "$DEVICE/.kobo/dict/"
-ok "Fonts and dictionaries in place"
+ok "Fonts, wallpapers and dictionaries in place"
 
 # ─── library folder shape ─────────────────────────────────────────────────────
 # Creates the subject folders listed in library/FOLDERS.txt that the device does
