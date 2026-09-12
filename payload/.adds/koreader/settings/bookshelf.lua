@@ -102,7 +102,13 @@ return {
     ["tabs"] = {
         [1] = {
             ["enabled"] = true,
-            ["filter"] = {},
+            ["filter"] = {
+                ["folders"] = {
+                    ["exclude"] = {
+                        ["/mnt/onboard/fonts"] = true,
+                    },
+                },
+            },
             ["id"] = "all",
             ["label"] = "Home",
             ["sort_priority"] = {
@@ -117,7 +123,13 @@ return {
         },
         [2] = {
             ["enabled"] = true,
-            ["filter"] = {},
+            ["filter"] = {
+                ["folders"] = {
+                    ["exclude"] = {
+                        ["/mnt/onboard/fonts"] = true,
+                    },
+                },
+            },
             ["id"] = "recent",
             ["label"] = "Recent",
             ["sort_priority"] = {
@@ -132,7 +144,13 @@ return {
         },
         [3] = {
             ["enabled"] = false,
-            ["filter"] = {},
+            ["filter"] = {
+                ["folders"] = {
+                    ["exclude"] = {
+                        ["/mnt/onboard/fonts"] = true,
+                    },
+                },
+            },
             ["id"] = "latest",
             ["label"] = "Latest",
             ["sort_priority"] = {
