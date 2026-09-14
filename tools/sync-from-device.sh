@@ -17,12 +17,27 @@ trap 'rc=$?; [ $rc -ne 0 ] && printf "\n\033[31m✗ Aborted at line $LINENO (exi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PAYLOAD="$ROOT/payload/.adds/koreader"
+# FAT32 source: no perms/owner/group to preserve, 2-second timestamps. Same as install.sh.
+RSYNC_FAT=(-rlt --modify-window=1)
 DRY=0; [ "${1:-}" = "--dry-run" ] && DRY=1
 
 g=$'\033[32m'; y=$'\033[33m'; r=$'\033[31m'; b=$'\033[1m'; o=$'\033[0m'
 ok(){ printf '%s✓%s %s\n' "$g" "$o" "$*"; }
 die(){ printf '%s✗%s %s\n' "$r" "$o" "$*" >&2; exit 1; }
 step(){ printf '\n%s▸ %s%s\n' "$b" "$*" "$o"; }
+
+is_wsl() { grep -qi microsoft /proc/version 2>/dev/null; }
+
+# Windows users type the drive the way Windows shows it — "D:", "D:\", even
+# "/D:". Inside bash that letter lives at /mnt/d (WSL) or /d (Git Bash).
+normalize_mount() {
+  local m="${1#/}" l
+  case "$m" in
+    [A-Za-z]:*) l="$(printf '%s' "${m:0:1}" | tr 'A-Z' 'a-z')"
+                if is_wsl; then printf '/mnt/%s' "$l"; else printf '/%s' "$l"; fi ;;
+    *)          printf '%s' "$1" ;;
+  esac
+}
 
 detect_kobo() {
   local c
@@ -36,7 +51,40 @@ detect_kobo() {
   done
   return 1
 }
-DEVICE="${KOBO_MOUNT:-$(detect_kobo || echo /Volumes/KOBOeReader)}"
+
+# WSL mounts the drives that exist when it starts. A Kobo plugged in AFTER
+# that shows up in Windows Explorer but not under /mnt — the single most
+# common way this script fails on Windows. So ask Windows itself which drive
+# letter carries the volume label "KOBOeReader", and mount it if WSL hasn't.
+# Runs inside $(...): every message here goes to stderr, only the path to stdout.
+wsl_find_kobo() {
+  is_wsl || return 1
+  local ps letter upper
+  ps="$(command -v powershell.exe 2>/dev/null || true)"
+  [ -n "$ps" ] || ps="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+  [ -x "$ps" ] || return 1
+  letter="$("$ps" -NoProfile -NonInteractive -Command \
+    '(Get-Volume | Where-Object FileSystemLabel -eq "KOBOeReader" | Select-Object -First 1).DriveLetter' \
+    2>/dev/null | tr -d '\r\n ' | tr 'A-Z' 'a-z')"
+  case "$letter" in [a-z]) ;; *) return 1 ;; esac
+  upper="$(printf '%s' "$letter" | tr 'a-z' 'A-Z')"
+  if [ -f "/mnt/$letter/.kobo/version" ]; then printf '/mnt/%s' "$letter"; return 0; fi
+  {
+    printf '\n  Windows sees your Kobo as drive %s: but WSL has not mounted it\n' "$upper"
+    printf '  (it was plugged in after WSL started). Mounting it now.\n'
+    printf '  This needs your Linux password — the one you chose when installing Ubuntu:\n'
+    printf '    sudo mkdir -p /mnt/%s && sudo mount -t drvfs %s: /mnt/%s\n\n' "$letter" "$upper" "$letter"
+  } >&2
+  sudo mkdir -p "/mnt/$letter" >&2 && sudo mount -t drvfs "$upper:" "/mnt/$letter" >&2 || return 1
+  [ -f "/mnt/$letter/.kobo/version" ] && { printf '/mnt/%s' "$letter"; return 0; }
+  return 1
+}
+
+if [ -n "${KOBO_MOUNT:-}" ]; then
+  DEVICE="$(normalize_mount "$KOBO_MOUNT")"
+else
+  DEVICE="$(detect_kobo || wsl_find_kobo || echo /Volumes/KOBOeReader)"
+fi
 
 step "Checking"
 command -v rsync >/dev/null || die "rsync not found."
@@ -72,14 +120,14 @@ EXCLUDES=(
 
 if [ "$DRY" = 1 ]; then
   step "Dry run — comparing device to payload/, nothing written"
-  rsync -an --delete --itemize-changes "${EXCLUDES[@]}" \
+  rsync "${RSYNC_FAT[@]}" -n --delete --itemize-changes "${EXCLUDES[@]}" \
     "$DEVICE/.adds/koreader/" "$PAYLOAD/" | head -60
   say() { :; }
   exit 0
 fi
 
 step "Pulling your device's KOReader settings into the repo"
-rsync -a --delete "${EXCLUDES[@]}" "$DEVICE/.adds/koreader/" "$PAYLOAD/"
+rsync "${RSYNC_FAT[@]}" --delete "${EXCLUDES[@]}" "$DEVICE/.adds/koreader/" "$PAYLOAD/"
 # The pulled settings.reader.lua carries this device's identity. Strip it,
 # same as every shareable payload build has always done.
 python3 - "$PAYLOAD/settings.reader.lua" <<'PYEOF'
