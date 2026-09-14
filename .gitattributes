@@ -1,0 +1,4 @@
+# Ship every byte exactly as committed. Git for Windows would otherwise
+# rewrite line endings on checkout: install.sh would gain \r on every line
+# ("/usr/bin/env: bash\r: No such file") and the Lua settings would too.
+* -text

@@ -87,33 +87,62 @@ The Kobo usually mounts at `/media/$USER/KOBOeReader` or
 
 ### Windows
 
-The scripts are bash, so you need one of these:
+The scripts are bash. On Windows that means **WSL** — a real Ubuntu that
+Microsoft ships inside Windows. Not PowerShell, not Git Bash (it has no
+`rsync`, and the installer is built on `rsync`). This is the only Windows
+path this guide supports; it is the one that has been debugged.
 
-**Option A — WSL (recommended).** In PowerShell as administrator:
+**One-time setup — about 10 minutes, one restart**
 
-```powershell
-wsl --install
-```
+1. Open the Start menu, type `PowerShell`, right-click it → **Run as
+   administrator**. Paste:
 
-Reboot, open **Ubuntu** from the Start menu, then:
+   ```powershell
+   wsl --install
+   ```
+
+   Let it finish, then **restart the computer**.
+
+2. After the restart a window titled **Ubuntu** opens on its own (if not,
+   open it from the Start menu). It asks you to create a **username** and a
+   **password**. This is your *Linux* password, separate from Windows — the
+   installer will ask for it once later, so remember it. Nothing appears
+   while you type it; that is normal.
+
+3. In that Ubuntu window, install the three tools:
+
+   ```bash
+   sudo apt update && sudo apt install -y git rsync python3
+   ```
+
+**Every time you install or update**
+
+1. Plug in the Kobo, unlock it, tap **Connect** on its screen.
+2. Wait until Windows Explorer shows **KOBOeReader (D:)** — the letter may
+   differ. If Explorer does not show it, nothing below can either.
+3. Open **Ubuntu** from the Start menu — *not* PowerShell, *not* Git Bash.
+4. Run the install steps in the next section exactly as written.
+
+The installer finds the Kobo through Windows itself, so it does not matter
+whether you plugged it in before or after opening Ubuntu. If WSL had not
+seen the drive yet, the script says so, shows the one command it is about to
+run, and asks for your Linux password to run it. That is expected.
+
+**If something goes wrong**
+
+| You see | What it means | Do this |
+|---|---|---|
+| `No Kobo found` | Windows has not mounted the device | Check Explorer shows **KOBOeReader**. If not: unplug, re-plug, tap **Connect**, wait 10 s. |
+| `No Kobo found` but Explorer shows it as `D:` | WSL cannot see the drive letter | `KOBO_MOUNT=D: ./install.sh` — use your letter. Still nothing: close Ubuntu, unplug, re-plug, open Ubuntu again. |
+| `[sudo] password for …` | The script is mounting the drive | Type your Linux password (invisible while typing), press Enter. |
+| `bash\r: No such file or directory` | An old clone made with Windows line endings | `git pull`, then `git checkout -- .` — the repo now pins line endings. |
+| `rsync: command not found` | Step 3 of the one-time setup was skipped | Run it. |
+| `Permission denied` on `./install.sh` | Lost its executable bit | `bash install.sh` instead. |
+
+On any platform, if the device is somewhere unusual, point at it directly:
 
 ```bash
-sudo apt update && sudo apt install git rsync python3
-```
-
-Your Kobo appears in WSL as a drive letter under `/mnt`. If it is drive `E:`
-it will be `/mnt/e`, and the scripts find it automatically.
-
-**Option B — Git Bash.** Install [Git for Windows](https://git-scm.com/download/win),
-which gives you a bash shell. Note that Git Bash does **not** include `rsync`,
-so you would have to add it separately — WSL is the easier path.
-
-In Git Bash the Kobo is `/e` for drive `E:`, also found automatically.
-
-**If your device is not found**, point at it directly:
-
-```bash
-KOBO_MOUNT=/mnt/e ./install.sh
+KOBO_MOUNT=/path/to/kobo ./install.sh
 ```
 
 ## Install
@@ -240,10 +269,11 @@ Copying books only **adds**. Nothing already on the device is deleted, and
 
 Every run backs up to `backups/<timestamp>/` before writing anything.
 
-If your device is not found:
+If your device is not found, see the troubleshooting table under your platform
+above (Windows users: the WSL table). As a last resort:
 
 ```bash
-KOBO_MOUNT=/mnt/e ./install.sh
+KOBO_MOUNT=/path/to/kobo ./install.sh      # Windows: KOBO_MOUNT=D: works too
 ```
 
 ---

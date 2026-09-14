@@ -12,13 +12,32 @@ set -euo pipefail
 trap 'rc=$?; [ $rc -ne 0 ] && printf "\n\033[31m✗ Aborted at line $LINENO (exit $rc). Nothing further was changed.\033[0m\n" >&2; exit $rc' ERR
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# A Kobo is a FAT32 drive. It cannot store owner, group or permission bits,
+# and its timestamps have 2-second resolution. rsync -a (-rlptgoD) tries to
+# set all of those; on a Linux vfat or WSL drvfs mount that can fail with
+# exit 23 and abort the whole install at the last file. -rlt keeps exactly
+# what FAT can hold, --modify-window=1 stops every re-run recopying everything.
+RSYNC_FAT=(-rlt --modify-window=1)
 PAYLOAD="$ROOT/payload"
 BACKUPS="$ROOT/backups"
 # Find the Kobo on any platform.
 #   macOS     /Volumes/KOBOeReader
 #   Linux     /media/$USER/KOBOeReader, /run/media/$USER/KOBOeReader
 #   Windows   WSL: /mnt/d, /mnt/e …   Git Bash: /d, /e …
-# Override with:  KOBO_MOUNT=/path/to/kobo
+# Override with:  KOBO_MOUNT=/path/to/kobo   (Windows: KOBO_MOUNT=D: also works)
+is_wsl() { grep -qi microsoft /proc/version 2>/dev/null; }
+
+# Windows users type the drive the way Windows shows it — "D:", "D:\", even
+# "/D:". Inside bash that letter lives at /mnt/d (WSL) or /d (Git Bash).
+normalize_mount() {
+  local m="${1#/}" l
+  case "$m" in
+    [A-Za-z]:*) l="$(printf '%s' "${m:0:1}" | tr 'A-Z' 'a-z')"
+                if is_wsl; then printf '/mnt/%s' "$l"; else printf '/%s' "$l"; fi ;;
+    *)          printf '%s' "$1" ;;
+  esac
+}
+
 detect_kobo() {
   local c
   for c in "/Volumes/KOBOeReader" \
@@ -31,7 +50,40 @@ detect_kobo() {
   done
   return 1
 }
-DEVICE="${KOBO_MOUNT:-$(detect_kobo || echo /Volumes/KOBOeReader)}"
+
+# WSL mounts the drives that exist when it starts. A Kobo plugged in AFTER
+# that shows up in Windows Explorer but not under /mnt — the single most
+# common way this script fails on Windows. So ask Windows itself which drive
+# letter carries the volume label "KOBOeReader", and mount it if WSL hasn't.
+# Runs inside $(...): every message here goes to stderr, only the path to stdout.
+wsl_find_kobo() {
+  is_wsl || return 1
+  local ps letter upper
+  ps="$(command -v powershell.exe 2>/dev/null || true)"
+  [ -n "$ps" ] || ps="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+  [ -x "$ps" ] || return 1
+  letter="$("$ps" -NoProfile -NonInteractive -Command \
+    '(Get-Volume | Where-Object FileSystemLabel -eq "KOBOeReader" | Select-Object -First 1).DriveLetter' \
+    2>/dev/null | tr -d '\r\n ' | tr 'A-Z' 'a-z')"
+  case "$letter" in [a-z]) ;; *) return 1 ;; esac
+  upper="$(printf '%s' "$letter" | tr 'a-z' 'A-Z')"
+  if [ -f "/mnt/$letter/.kobo/version" ]; then printf '/mnt/%s' "$letter"; return 0; fi
+  {
+    printf '\n  Windows sees your Kobo as drive %s: but WSL has not mounted it\n' "$upper"
+    printf '  (it was plugged in after WSL started). Mounting it now.\n'
+    printf '  This needs your Linux password — the one you chose when installing Ubuntu:\n'
+    printf '    sudo mkdir -p /mnt/%s && sudo mount -t drvfs %s: /mnt/%s\n\n' "$letter" "$upper" "$letter"
+  } >&2
+  sudo mkdir -p "/mnt/$letter" >&2 && sudo mount -t drvfs "$upper:" "/mnt/$letter" >&2 || return 1
+  [ -f "/mnt/$letter/.kobo/version" ] && { printf '/mnt/%s' "$letter"; return 0; }
+  return 1
+}
+
+if [ -n "${KOBO_MOUNT:-}" ]; then
+  DEVICE="$(normalize_mount "$KOBO_MOUNT")"
+else
+  DEVICE="$(detect_kobo || wsl_find_kobo || echo /Volumes/KOBOeReader)"
+fi
 STAMP="$(date +%Y%m%d-%H%M%S)"
 TMPD="$(mktemp -d)"; KEEPTMP=0
 trap '[ "${KEEPTMP:-0}" = 1 ] || rm -rf "$TMPD"' EXIT
@@ -64,7 +116,7 @@ copy_with_progress() {   # copy_with_progress <label> <src> <dst> [extra rsync a
   local n size
   n="$(safe_count "$src")"; size="$(safe_size "$src")"
   printf '  %s — %s files, %s\n' "$label" "$n" "$size"
-  rsync -a "${RSYNC_PROGRESS[@]}" "$@" "$src" "$dst" 2>&1 \
+  rsync "${RSYNC_FAT[@]}" "${RSYNC_PROGRESS[@]}" "$@" "$src" "$dst" 2>&1 \
     | while IFS= read -r line; do
         case "$line" in
           *%*) printf '\r  %s' "$(printf '%s' "$line" | tr -s ' ' | cut -c1-70)" ;;
@@ -99,7 +151,13 @@ step() { printf '\n%s▸ %s%s\n' $'\033[1m' "$*" "$c_off"; }
 step "Checking prerequisites"
 command -v rsync >/dev/null || die "rsync not found. Install it and retry."
 [ -d "$PAYLOAD" ] || die "payload/ missing next to this script. Is the repo complete?"
-[ -d "$DEVICE" ]  || die "No Kobo found. Plug it in, unlock it, and tap Connect on its screen.\n   Looked in /Volumes, /media, /run/media, /mnt and drive letters.\n   If it is elsewhere:  KOBO_MOUNT=/path/to/kobo ./install.sh"
+if [ ! -d "$DEVICE" ]; then
+  hint="   If it is elsewhere:  KOBO_MOUNT=/path/to/kobo ./install.sh"
+  if is_wsl; then
+    hint="   On Windows (WSL): the Kobo must show in Explorer as KOBOeReader (D:) or similar.\n   If it does and this still fails:  KOBO_MOUNT=D: ./install.sh   (use your letter)\n   Still nothing? Close this window, unplug and re-plug the Kobo, tap Connect, open Ubuntu again."
+  fi
+  die "No Kobo found. Plug it in, unlock it, and tap Connect on its screen.\n   Looked in /Volumes, /media, /run/media, /mnt and drive letters.\n$hint"
+fi
 [ -f "$DEVICE/.kobo/version" ] || die "$DEVICE is mounted but is not a Kobo — refusing to touch it."
 
 FW="$(cut -d, -f3 "$DEVICE/.kobo/version" 2>/dev/null || echo unknown)"
@@ -120,13 +178,13 @@ if [ "$RESTORE" = 1 ]; then
   read -r a
   case "$a" in y|Y|yes|YES|Yes) ;; *) die "Cancelled — nothing was changed." ;; esac
   if [ -d "$LAST/.adds" ]; then
-    rsync -a --delete "$LAST/.adds/" "$DEVICE/.adds/"
+    rsync "${RSYNC_FAT[@]}" --delete "$LAST/.adds/" "$DEVICE/.adds/"
   else
     # the backup holds no .adds/, so this device had none before the install
     warn "This device had no .adds/ before installing — removing what was added."
     rm -rf "$DEVICE/.adds/koreader"
   fi
-  [ -d "$LAST/.kobo/dict" ] && rsync -a --delete "$LAST/.kobo/dict/" "$DEVICE/.kobo/dict/"
+  [ -d "$LAST/.kobo/dict" ] && rsync "${RSYNC_FAT[@]}" --delete "$LAST/.kobo/dict/" "$DEVICE/.kobo/dict/"
   ok "Restored .adds/ and .kobo/dict/ from $(basename "${LAST%/}")"
   warn "Fonts and wallpapers added to fonts/ and wallpapers/ are left in place — delete them by hand if you want them gone."
   say  "Eject and reboot the Kobo."; exit 0
@@ -166,7 +224,7 @@ fi
 
 if [ "$DRY" = 1 ]; then
   step "Dry run — nothing will be written"
-  rsync -an --delete --itemize-changes \
+  rsync "${RSYNC_FAT[@]}" -n --delete --itemize-changes \
     --exclude 'cache/' --exclude 'screenshots/' --exclude 'crash.log' --exclude 'ota/' \
     --exclude 'history.lua' --exclude 'clipboard/' --exclude 'settings/statistics.sqlite3' \
     --exclude 'settings/bookinfo_cache.sqlite3' --exclude 'settings/vocabulary_builder.sqlite3' \
@@ -184,7 +242,7 @@ if [ "$DRY" = 1 ]; then
   if [ "$NBOOKS" -gt 0 ]; then
     step "Books — would copy from $BOOKS"
     say "  $NBOOKS book(s), $(safe_size "$BOOKS")"
-    rsync -an --itemize-changes \
+    rsync "${RSYNC_FAT[@]}" -n --itemize-changes \
       --exclude '*.sdr/' --exclude '._*' --exclude '.DS_Store' \
       --exclude 'README.md' --exclude '.gitkeep' --exclude '.git/' \
       "$BOOKS/" "$DEVICE/" > "$TMPD/books.txt" 2>&1 || true
@@ -215,13 +273,13 @@ confirm "This will modify your Kobo."
 step "Backing up device configuration"
 mkdir -p "$BACKUPS/$STAMP"
 if [ -d "$DEVICE/.adds" ]; then
-  rsync -a "${RSYNC_PROGRESS[@]}" "$DEVICE/.adds/" "$BACKUPS/$STAMP/.adds/" 2>&1 \
+  rsync "${RSYNC_FAT[@]}" "${RSYNC_PROGRESS[@]}" "$DEVICE/.adds/" "$BACKUPS/$STAMP/.adds/" 2>&1 \
     | while IFS= read -r l; do case "$l" in *%*) printf '\r  %s' "$(printf '%s' "$l" | tr -s ' ' | cut -c1-70)";; esac; done
   printf '\r  %-72s\n' "backup complete."
 else
   say "  nothing to back up — this device has no .adds/ yet (a fresh Kobo)"
 fi
-rsync -a "$DEVICE/.kobo/dict/" "$BACKUPS/$STAMP/.kobo/dict/" 2>/dev/null || true
+rsync "${RSYNC_FAT[@]}" "$DEVICE/.kobo/dict/" "$BACKUPS/$STAMP/.kobo/dict/" 2>/dev/null || true
 cp "$DEVICE/.kobo/version" "$BACKUPS/$STAMP/kobo-version.txt" 2>/dev/null || true
 ok "Backup: $BACKUPS/$STAMP ($(safe_size "$BACKUPS/$STAMP"))"
 
@@ -258,10 +316,10 @@ ok "KOReader $(cat "$PAYLOAD/.adds/koreader/git-rev" 2>/dev/null)"
 
 step "Installing NickelMenu entries, fonts, wallpapers and dictionaries"
 mkdir -p "$DEVICE/.adds/nm" "$DEVICE/fonts" "$DEVICE/wallpapers"
-rsync -a "$PAYLOAD/.adds/nm/menu" "$DEVICE/.adds/nm/menu"
-rsync -a "$PAYLOAD/fonts/"        "$DEVICE/fonts/"
-rsync -a "$PAYLOAD/wallpapers/"   "$DEVICE/wallpapers/"
-rsync -a --delete "$PAYLOAD/.kobo/dict/" "$DEVICE/.kobo/dict/"
+rsync "${RSYNC_FAT[@]}" "$PAYLOAD/.adds/nm/menu" "$DEVICE/.adds/nm/menu"
+rsync "${RSYNC_FAT[@]}" "$PAYLOAD/fonts/"        "$DEVICE/fonts/"
+rsync "${RSYNC_FAT[@]}" "$PAYLOAD/wallpapers/"   "$DEVICE/wallpapers/"
+rsync "${RSYNC_FAT[@]}" --delete "$PAYLOAD/.kobo/dict/" "$DEVICE/.kobo/dict/"
 ok "Fonts, wallpapers and dictionaries in place"
 
 # ─── library folder shape ─────────────────────────────────────────────────────
@@ -312,7 +370,7 @@ fi
 if [ "$NBOOKS" -gt 0 ]; then
   step "Copying books"
   say "  $NBOOKS book(s), $(safe_size "$BOOKS")"
-  rsync -a "${RSYNC_PROGRESS[@]}" \
+  rsync "${RSYNC_FAT[@]}" "${RSYNC_PROGRESS[@]}" \
     --exclude '*.sdr/' --exclude '._*' --exclude '.DS_Store' \
     --exclude 'README.md' --exclude '.gitkeep' --exclude '.git/' \
     "$BOOKS/" "$DEVICE/" 2>&1 \

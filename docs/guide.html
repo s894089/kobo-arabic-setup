@@ -314,13 +314,13 @@ tbody tr:hover td{background:var(--surface-2)}
       <tr><td><strong>Windows</strong></td>
         <td><span class="ar">تحتاج صدفة bash. الأسهل WSL:<br><code>wsl --install</code> في PowerShell كمسؤول، ثم أعد التشغيل، ثم من أوبونتو:<br><code>sudo apt install git rsync python3</code></span>
             <span class="en">You need a bash shell. WSL is easiest:<br><code>wsl --install</code> in PowerShell as administrator, reboot, then in Ubuntu:<br><code>sudo apt install git rsync python3</code></span></td>
-        <td class="mono">/mnt/e  (WSL)<br>/e  (Git Bash)</td></tr>
+        <td class="mono">/mnt/e  (WSL) — found and mounted automatically<br>KOBO_MOUNT=E: also accepted</td></tr>
     </tbody>
   </table></div>
   <div class="note care">
     <h4 class="ar">ملاحظة على ويندوز</h4><h4 class="en">A note on Windows</h4>
-    <p class="ar">‏Git Bash يعطيك صدفة bash لكنه <strong>لا يتضمّن <code>rsync</code></strong>، وهو أساس هذه السكربتات. لذا WSL أبسط بكثير من محاولة إضافته يدويًا.</p>
-    <p class="en">Git Bash gives you a bash shell but <strong>does not include <code>rsync</code></strong>, which these scripts are built on. WSL is far simpler than adding it by hand.</p>
+    <p class="ar">‏استعمل WSL فقط — لا PowerShell ولا Git Bash (فهو <strong>بلا <code>rsync</code></strong>، أساس هذه السكربتات). لا يهم أوصّلت الكوبو قبل فتح Ubuntu أم بعده: إن لم يكن WSL قد رأى القرص، يقول لك المثبّت ذلك ويركّبه بنفسه بعد أن يطلب كلمة مرور لينكس مرة واحدة. الدليل الكامل خطوة بخطوة، مع جدول الأعطال، في README.</p>
+    <p class="en">Use WSL only — not PowerShell, not Git Bash (it has <strong>no <code>rsync</code></strong>, which these scripts are built on). It does not matter whether you plug the Kobo in before or after opening Ubuntu: if WSL has not seen the drive yet, the installer says so and mounts it itself after asking for your Linux password once. Full step-by-step, with a troubleshooting table, is in the README.</p>
     <p class="ar">وإن لم يُعثر على الجهاز على أي نظام، أشِر إليه مباشرة:</p>
     <p class="en">If the device isn't found on any system, point at it directly:</p>
     <pre><code>KOBO_MOUNT=/mnt/e ./install.sh</code></pre>
